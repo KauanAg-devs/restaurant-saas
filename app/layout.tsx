@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import AdminPaymentMethods from './AdminPaymentMethods';
 import './globals.css';
 import './polish.css';
 import './admin-shortcut.css';
@@ -6,6 +7,7 @@ import './admin-premium.css';
 import './menu-editor.css';
 import './product-images.css';
 import './settings-admin.css';
+import './payment-methods.css';
 
 export const metadata: Metadata = {
   title: 'MesaFlow',
@@ -13,5 +15,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR"><body>{children}</body></html>;
+  return <html lang="pt-BR"><body>{children}<AdminPaymentMethods/></body></html>;
 }
