@@ -3,6 +3,7 @@ import './globals.css';
 import './polish.css';
 import './admin-shortcut.css';
 import './admin-isolation.css';
+import './admin-header.css';
 
 export const metadata: Metadata = {
   title: 'MesaFlow',
