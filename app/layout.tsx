@@ -9,6 +9,7 @@ import './product-images.css';
 import './settings-admin.css';
 import './payment-methods.css';
 import './onboarding.css';
+import './store-loading.css';
 
 export const metadata: Metadata = {
   title: 'MesaFlow',
