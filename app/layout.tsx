@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import './polish.css';
 import './admin-shortcut.css';
+import './admin-isolation.css';
 
 export const metadata: Metadata = {
   title: 'MesaFlow',
