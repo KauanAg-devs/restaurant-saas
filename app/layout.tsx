@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import AdminPaymentMethods from './AdminPaymentMethods';
-import AccountMenu from './AccountMenu';
 import './globals.css';
 import './polish.css';
 import './admin-shortcut.css';
@@ -19,5 +18,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR"><body>{children}<AdminPaymentMethods/><AccountMenu/></body></html>;
+  return <html lang="pt-BR"><body>{children}<AdminPaymentMethods/></body></html>;
 }
