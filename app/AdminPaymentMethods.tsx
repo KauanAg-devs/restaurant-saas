@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 
 const groups=[
  {title:'Pagamentos',items:[['pix','Pix'],['credit_card','Cartão de crédito'],['debit_card','Cartão de débito'],['cash','Dinheiro']]},
- {title:'Vouchers e benefícios',items:[['alelo','Alelo'],['ticket','Ticket'],['vr','VR'],['pluxee','Pluxee'],['ben','Ben'],['verocard','Verocard'],['sodexo','Sodexo'],['other_voucher','Outro voucher']]},
+ {title:'Vouchers e benefícios',items:[['alelo','Alelo'],['ticket','Ticket'],['vr','VR Benefícios'],['pluxee','Pluxee'],['ben','Ben'],['verocard','Verocard'],['sodexo','Sodexo'],['other_voucher','Outro voucher']]},
 ] as const;
 
 export default function AdminPaymentMethods(){
@@ -31,8 +31,7 @@ export default function AdminPaymentMethods(){
    if(!token)return;
    api(`admin?restaurant=${tenant}`,{headers:{authorization:`Bearer ${token}`}}).then((d:any)=>{
      const r=d.restaurant||{};
-     const fallback=[...(r.accepts_pix?['pix']:[]),...(r.accepts_card?['credit_card','debit_card']:[]),...(r.accepts_cash?['cash']:[])];
-     setMethods(Array.isArray(r.payment_methods)&&r.payment_methods.length?r.payment_methods:fallback);
+     setMethods(Array.isArray(r.payment_methods)?r.payment_methods:[]);
      setLoaded(true);
    }).catch(()=>{});
  },[host,loaded,tenant]);
