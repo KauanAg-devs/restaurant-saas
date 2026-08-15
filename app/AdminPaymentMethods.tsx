@@ -18,7 +18,7 @@ export default function AdminPaymentMethods(){
  const tenant=useMemo(()=>typeof window==='undefined'?'sabor-da-casa':new URLSearchParams(location.search).get('restaurant')||'sabor-da-casa',[]);
 
  useEffect(()=>{
-   const find=()=>setHost(document.querySelector('.settings-page .settings-grid'));
+   const find=()=>setHost(document.querySelector<HTMLElement>('.settings-page .settings-grid'));
    find();
    const observer=new MutationObserver(find);
    observer.observe(document.body,{childList:true,subtree:true});
