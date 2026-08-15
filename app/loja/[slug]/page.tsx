@@ -20,10 +20,11 @@ export default function StorePage({ params }: { params: Promise<{ slug: string }
   const [checkout,setCheckout]=useState(false);
   const [sending,setSending]=useState(false);
   const [orderNumber,setOrderNumber]=useState<number|null>(null);
+  const [hasAdminSession,setHasAdminSession]=useState(false);
   const [form,setForm]=useState({customer_name:'',customer_phone:'',fulfillment:'entrega',street:'',street_number:'',neighborhood:'',payment_method:'pix',notes:''});
 
   useEffect(()=>{api(`catalog?restaurant=${encodeURIComponent(slug)}`).then(setData).catch((e:Error)=>setError(e.message));},[slug]);
-  useEffect(()=>{const saved=localStorage.getItem(`mesaflow-cart-${slug}`);if(saved)try{setCart(JSON.parse(saved))}catch{}},[slug]);
+  useEffect(()=>{const saved=localStorage.getItem(`mesaflow-cart-${slug}`);if(saved)try{setCart(JSON.parse(saved))}catch{};setHasAdminSession(Boolean(localStorage.getItem('mesaflow-token')))},[slug]);
   useEffect(()=>{if(slug)localStorage.setItem(`mesaflow-cart-${slug}`,JSON.stringify(cart));},[cart,slug]);
 
   const products=useMemo(()=>data?.products.filter(p=>category==='all'||p.category_id===category)??[],[data,category]);
@@ -46,7 +47,7 @@ export default function StorePage({ params }: { params: Promise<{ slug: string }
   const heroInline=heroStyle==='image'&&r.hero_image_url?{backgroundImage:`linear-gradient(#0007,#0007),url(${r.hero_image_url})`}:undefined;
 
   return <div className={`store hero-${heroStyle} button-${buttonStyle}`} style={theme}>
-    <header className="store-nav"><div className="store-wrap"><div className="store-brand"><div className="store-logo">{r.logo_url?<img src={r.logo_url} alt={`${r.name} logo`}/>:r.name?.[0]}</div><div><strong>{r.name}</strong><small>● Aberto agora</small></div></div><button className="store-cart themed-button" onClick={()=>setDrawer(true)}>Sacola · {cart.reduce((s,i)=>s+i.quantity,0)}</button></div></header>
+    <header className="store-nav"><div className="store-wrap"><div className="store-brand"><div className="store-logo">{r.logo_url?<img src={r.logo_url} alt={`${r.name} logo`}/>:r.name?.[0]}</div><div><strong>{r.name}</strong><small>● Aberto agora</small></div></div><div className="store-actions">{hasAdminSession?<a className="admin-shortcut" href={`/admin?restaurant=${encodeURIComponent(slug)}`}>Painel admin</a>:null}<button className="store-cart themed-button" onClick={()=>setDrawer(true)}>Sacola · {cart.reduce((s,i)=>s+i.quantity,0)}</button></div></div></header>
     <main className="store-wrap">
       <section className="store-hero" style={heroInline}><div><span>● ABERTO AGORA</span><h1>{r.tagline||'Comida feita do seu jeito.'}</h1><p>Peça direto do restaurante. Simples, rápido e sem intermediários.</p><b>{r.delivery_minutes_min}–{r.delivery_minutes_max} min · Entrega {money(r.delivery_fee)}</b></div><div className="hero-dish">{r.logo_url?<img src={r.logo_url} alt=""/>:'🍽️'}</div></section>
       <nav className="category-nav"><button className={category==='all'?'active':''} onClick={()=>setCategory('all')}>Destaques</button>{data.categories.map(c=><button className={category===c.id?'active':''} key={c.id} onClick={()=>setCategory(c.id)}>{c.name}</button>)}</nav>
