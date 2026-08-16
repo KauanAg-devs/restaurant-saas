@@ -20,6 +20,7 @@ import './onboarding.css';
 import './store-loading.css';
 import './account.css';
 import './account-mobile.css';
+import './activation-mobile-fix.css';
 import './patterns.css';
 import './palettes.css';
 import './order-actions.css';
