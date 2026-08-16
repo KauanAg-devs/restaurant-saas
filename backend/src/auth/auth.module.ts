@@ -1,10 +1,11 @@
-import { BadRequestException, Body, Controller, ForbiddenException, Injectable, Module, Post, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Injectable, Module, Post, Req, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { compare, hash } from 'bcryptjs';
 import { DataSource, Repository } from 'typeorm';
 import { CategoryEntity, RestaurantEntity, RestaurantMemberEntity, RestaurantRole, UserEntity } from '../database/entities';
+import { RateLimitModule, RateLimitService } from '../security/rate-limit.module';
 
 @Injectable()
 export class AuthService{
@@ -16,9 +17,14 @@ export class AuthService{
 }
 
 @Controller()
-class AuthController{constructor(private auth:AuthService){} @Post('login') login(@Body() b:any){return this.auth.login(b.email,b.password)} @Post('onboarding') onboarding(@Body() b:any){return this.auth.onboarding(b)}}
+class AuthController{
+ constructor(private auth:AuthService,private limits:RateLimitService){}
+ @Post('login') async login(@Req() req:any,@Body() b:any){const email=String(b.email||'').trim().toLowerCase();await this.limits.hit('login',`${clientIp(req)}:${email}`,10,900);return this.auth.login(b.email,b.password)}
+ @Post('onboarding') async onboarding(@Req() req:any,@Body() b:any){await this.limits.hit('onboarding',clientIp(req),5,3600);return this.auth.onboarding(b)}
+}
 
-@Module({imports:[TypeOrmModule.forFeature([UserEntity,RestaurantEntity,RestaurantMemberEntity,CategoryEntity]),JwtModule.registerAsync({inject:[ConfigService],useFactory:(c:ConfigService)=>({secret:c.getOrThrow('JWT_SECRET'),signOptions:{expiresIn:c.get('JWT_EXPIRES_IN','7d') as any}})})],providers:[AuthService],controllers:[AuthController],exports:[AuthService,JwtModule]})
+@Module({imports:[RateLimitModule,TypeOrmModule.forFeature([UserEntity,RestaurantEntity,RestaurantMemberEntity,CategoryEntity]),JwtModule.registerAsync({inject:[ConfigService],useFactory:(c:ConfigService)=>({secret:c.getOrThrow('JWT_SECRET'),signOptions:{expiresIn:c.get('JWT_EXPIRES_IN','7d') as any}})})],providers:[AuthService],controllers:[AuthController],exports:[AuthService,JwtModule]})
 export class AuthModule{}
 
+function clientIp(req:any){const forwarded=String(req.headers?.['x-forwarded-for']||'').split(',')[0].trim();return forwarded||req.ip||req.socket?.remoteAddress||'unknown'}
 function slugify(v:string){return String(v||'restaurante').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,70)||'restaurante'}
