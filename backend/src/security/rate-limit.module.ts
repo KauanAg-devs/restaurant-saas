@@ -1,4 +1,4 @@
-import { Injectable, Module, TooManyRequestsException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Module } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { DataSource } from 'typeorm';
 
@@ -18,7 +18,7 @@ export class RateLimitService {
       [scope, keyHash, bucket, windowSeconds],
     );
     const hits = Number(result?.[0]?.hits || 0);
-    if (hits > limit) throw new TooManyRequestsException('Muitas tentativas. Aguarde um pouco e tente novamente.');
+    if (hits > limit) throw new HttpException('Muitas tentativas. Aguarde um pouco e tente novamente.', HttpStatus.TOO_MANY_REQUESTS);
     if (Math.random() < 0.01) void this.db.query(`DELETE FROM rate_limit_buckets WHERE expires_at < NOW()`);
   }
 }
