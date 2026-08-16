@@ -3,7 +3,10 @@ import express from 'express';
 import type { Request, Response } from 'express';
 import { NestFactory } from '@nestjs/core';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import { AppModule } from '../backend/src/app.module';
+// Load the backend compiled as CommonJS during the root build. Using the emitted
+// artifact avoids Node ESM extension resolution issues inside Vercel Functions.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { AppModule } = require('../backend/dist/app.module.js');
 
 const server = express();
 let init: Promise<void> | null = null;
