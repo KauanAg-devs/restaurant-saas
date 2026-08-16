@@ -11,6 +11,7 @@ import './payment-methods.css';
 import './onboarding.css';
 import './store-loading.css';
 import './account.css';
+import './account-mobile.css';
 
 export const metadata: Metadata = {
   title: 'MesaFlow',
