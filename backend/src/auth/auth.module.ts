@@ -5,6 +5,7 @@ import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { compare, hash } from 'bcryptjs';
 import { DataSource, Repository } from 'typeorm';
 import { CategoryEntity, RestaurantEntity, RestaurantMemberEntity, RestaurantRole, UserEntity } from '../database/entities';
+import { clientIp } from '../security/client-ip';
 import { RateLimitModule, RateLimitService } from '../security/rate-limit.module';
 
 @Injectable()
@@ -19,12 +20,11 @@ export class AuthService{
 @Controller()
 class AuthController{
  constructor(private auth:AuthService,private limits:RateLimitService){}
- @Post('login') async login(@Req() req:any,@Body() b:any){const email=String(b.email||'').trim().toLowerCase();await this.limits.hit('login',`${clientIp(req)}:${email}`,10,900);return this.auth.login(b.email,b.password)}
- @Post('onboarding') async onboarding(@Req() req:any,@Body() b:any){await this.limits.hit('onboarding',clientIp(req),5,3600);return this.auth.onboarding(b)}
+ @Post('login') async login(@Req() req:any,@Body() b:any){const email=String(b.email||'').trim().toLowerCase(),key=`${clientIp(req)}:${email}`;await this.limits.hit('login-5m',key,5,300);await this.limits.hit('login-1h',key,15,3600);return this.auth.login(b.email,b.password)}
+ @Post('onboarding') async onboarding(@Req() req:any,@Body() b:any){const ip=clientIp(req);await this.limits.hit('onboarding-1h',ip,3,3600);await this.limits.hit('onboarding-24h',ip,8,86400);return this.auth.onboarding(b)}
 }
 
 @Module({imports:[RateLimitModule,TypeOrmModule.forFeature([UserEntity,RestaurantEntity,RestaurantMemberEntity,CategoryEntity]),JwtModule.registerAsync({inject:[ConfigService],useFactory:(c:ConfigService)=>({secret:c.getOrThrow('JWT_SECRET'),signOptions:{expiresIn:c.get('JWT_EXPIRES_IN','7d') as any}})})],providers:[AuthService],controllers:[AuthController],exports:[AuthService,JwtModule]})
 export class AuthModule{}
 
-function clientIp(req:any){const forwarded=String(req.headers?.['x-forwarded-for']||'').split(',')[0].trim();return forwarded||req.ip||req.socket?.remoteAddress||'unknown'}
 function slugify(v:string){return String(v||'restaurante').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,70)||'restaurante'}
