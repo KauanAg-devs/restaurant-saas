@@ -8,7 +8,14 @@ export async function api(path: string, init: RequestInit = {}) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = typeof data?.error === 'string' ? data.error : typeof data?.message === 'string' ? data.message : 'Não foi possível concluir a solicitação.';
+    const rawMessage = data?.message;
+    const message = Array.isArray(rawMessage)
+      ? rawMessage.filter(Boolean).join(' ')
+      : typeof rawMessage === 'string'
+        ? rawMessage
+        : typeof data?.error === 'string'
+          ? data.error
+          : 'Não foi possível concluir a solicitação.';
     throw new Error(message);
   }
   return data;
