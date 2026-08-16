@@ -1,0 +1,1 @@
+.operational-order:has(.order-actions:empty){grid-template-columns:minmax(64px,.7fr) minmax(120px,1.3fr) minmax(110px,.9fr) minmax(90px,.7fr)!important}.operational-order:has(.order-actions:empty) .order-actions{display:none}.order-next{min-width:126px}.order-cancel{min-width:82px}@media(max-width:640px){.order-next,.order-cancel{min-width:0}}
