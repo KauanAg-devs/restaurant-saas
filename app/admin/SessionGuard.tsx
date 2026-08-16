@@ -9,7 +9,7 @@ export default function SessionGuard(){
     const tenant=new URLSearchParams(location.search).get('restaurant')||'sabor-da-casa';
     fetch(`/api/admin?restaurant=${encodeURIComponent(tenant)}`,{headers:{authorization:`Bearer ${token}`},cache:'no-store'})
       .then(async response=>{
-        if(response.status===401){
+        if(response.status===401||response.status===403){
           localStorage.removeItem('mesaflow-token');
           location.reload();
         }
