@@ -18,6 +18,7 @@ import './account-mobile.css';
 import './patterns.css';
 import './palettes.css';
 import './order-actions.css';
+import './order-flow-cleanup.css';
 
 export const metadata: Metadata = {
   title: 'MesaFlow',
