@@ -1,0 +1,6 @@
+@media(max-width:900px){
+  .activation-card{right:14px!important;bottom:82px!important;max-height:calc(100vh - 110px);overflow:auto}
+}
+@media(max-width:560px){
+  .activation-card{right:12px!important;bottom:76px!important;width:min(360px,calc(100vw - 24px))}
+}
