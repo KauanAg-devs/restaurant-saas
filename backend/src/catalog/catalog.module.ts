@@ -2,11 +2,12 @@ import { Controller, Get, Module, NotFoundException, Query } from '@nestjs/commo
 import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CategoryEntity, ProductAddonEntity, ProductEntity, RestaurantEntity } from '../database/entities';
+import { categoryResponse, productResponse, restaurantResponse } from '../api-contract';
 
 @Controller('catalog')
 class CatalogController{
  constructor(@InjectRepository(RestaurantEntity) private restaurants:Repository<RestaurantEntity>,@InjectRepository(CategoryEntity) private categories:Repository<CategoryEntity>,@InjectRepository(ProductEntity) private products:Repository<ProductEntity>,@InjectRepository(ProductAddonEntity) private addons:Repository<ProductAddonEntity>){}
- @Get() async get(@Query('restaurant') slug='sabor-da-casa'){const restaurant=await this.restaurants.findOne({where:{slug,active:true}});if(!restaurant)throw new NotFoundException('Restaurante não encontrado');const [categories,products]=await Promise.all([this.categories.find({where:{restaurantId:restaurant.id,active:true},order:{sortOrder:'ASC'}}),this.products.find({where:{restaurantId:restaurant.id,active:true,available:true},order:{sortOrder:'ASC'}})]);const addonRows=products.length?await this.addons.createQueryBuilder('a').where('a.product_id IN (:...ids)',{ids:products.map(p=>p.id)}).andWhere('a.active=true').orderBy('a.sort_order','ASC').getMany():[];return{restaurant:{...restaurant,is_open:isOpen(restaurant.openingHours,restaurant.timezone)},categories,products:products.map(p=>({...p,addons:addonRows.filter(a=>a.productId===p.id)}))}}
+ @Get() async get(@Query('restaurant') slug='sabor-da-casa'){const restaurant=await this.restaurants.findOne({where:{slug,active:true}});if(!restaurant)throw new NotFoundException('Restaurante não encontrado');const [categories,products]=await Promise.all([this.categories.find({where:{restaurantId:restaurant.id,active:true},order:{sortOrder:'ASC'}}),this.products.find({where:{restaurantId:restaurant.id,active:true,available:true},order:{sortOrder:'ASC'}})]);const addonRows=products.length?await this.addons.createQueryBuilder('a').where('a.product_id IN (:...ids)',{ids:products.map(p=>p.id)}).andWhere('a.active=true').orderBy('a.sort_order','ASC').getMany():[];return{restaurant:{...restaurantResponse(restaurant),is_open:isOpen(restaurant.openingHours,restaurant.timezone)},categories:categories.map(categoryResponse),products:products.map(p=>productResponse(p,addonRows.filter(a=>a.productId===p.id)))}}
 }
 @Module({imports:[TypeOrmModule.forFeature([RestaurantEntity,CategoryEntity,ProductEntity,ProductAddonEntity])],controllers:[CatalogController]}) export class CatalogModule{}
 
