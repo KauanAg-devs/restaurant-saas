@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { API, api } from "@/lib/api";
 import { formatMoney } from "../format";
 
@@ -168,96 +169,103 @@ export default function Catalog({
           ))}
         </div>
       </section>
-      {editing ? (
-        <div className="product-editor-back">
-          <section className="product-editor">
-            <div className="product-editor-head">
-              <h2>{form.id ? "Editar produto" : "Novo produto"}</h2>
-              <button onClick={() => onProductChange(null)}>×</button>
-            </div>
-            <div className="image-upload">
-              <div>
-                {form.image_url ? (
-                  <img src={form.image_url} alt="" />
-                ) : (
-                  <span>Imagem do produto</span>
-                )}
-              </div>
-              <label className="image-upload-button">
-                {uploading ? "Enviando…" : "Enviar foto"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => upload(e.target.files?.[0])}
-                />
-              </label>
-            </div>
-            <div className="product-form">
-              <label>
-                Nome
-                <input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-              </label>
-              <label>
-                Preço
-                <input
-                  type="number"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                />
-              </label>
-              <label className="wide">
-                Descrição
-                <textarea
-                  value={form.description || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                />
-              </label>
-              <label>
-                Categoria
-                <select
-                  value={form.category_id}
-                  onChange={(e) =>
-                    setForm({ ...form, category_id: e.target.value })
-                  }
-                >
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={form.available}
-                  onChange={(e) =>
-                    setForm({ ...form, available: e.target.checked })
-                  }
-                />
-                Disponível
-              </label>
-            </div>
-            <div className="product-editor-actions">
-              {form.id ? (
-                <button className="danger-button" onClick={remove}>
-                  Excluir
-                </button>
-              ) : (
-                <span />
-              )}
-              <button className="button button-dark" onClick={save}>
-                Salvar produto
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
+      {editing
+        ? createPortal(
+            <div className="product-editor-back">
+              <section className="product-editor">
+                <div className="product-editor-head">
+                  <h2>{form.id ? "Editar produto" : "Novo produto"}</h2>
+                  <button onClick={() => onProductChange(null)}>×</button>
+                </div>
+                <div className="image-upload">
+                  <div>
+                    {form.image_url ? (
+                      <img src={form.image_url} alt="" />
+                    ) : (
+                      <span>Imagem do produto</span>
+                    )}
+                  </div>
+                  <label className="image-upload-button">
+                    {uploading ? "Enviando…" : "Enviar foto"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => upload(e.target.files?.[0])}
+                    />
+                  </label>
+                </div>
+                <div className="product-form">
+                  <label>
+                    Nome
+                    <input
+                      value={form.name}
+                      onChange={(e) =>
+                        setForm({ ...form, name: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Preço
+                    <input
+                      type="number"
+                      value={form.price}
+                      onChange={(e) =>
+                        setForm({ ...form, price: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label className="wide">
+                    Descrição
+                    <textarea
+                      value={form.description || ""}
+                      onChange={(e) =>
+                        setForm({ ...form, description: e.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Categoria
+                    <select
+                      value={form.category_id}
+                      onChange={(e) =>
+                        setForm({ ...form, category_id: e.target.value })
+                      }
+                    >
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="check">
+                    <input
+                      type="checkbox"
+                      checked={form.available}
+                      onChange={(e) =>
+                        setForm({ ...form, available: e.target.checked })
+                      }
+                    />
+                    Disponível
+                  </label>
+                </div>
+                <div className="product-editor-actions">
+                  {form.id ? (
+                    <button className="danger-button" onClick={remove}>
+                      Excluir
+                    </button>
+                  ) : (
+                    <span />
+                  )}
+                  <button className="button button-dark" onClick={save}>
+                    Salvar produto
+                  </button>
+                </div>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }
