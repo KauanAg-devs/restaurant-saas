@@ -1,12 +1,14 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, use, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import {
   buildOrderWhatsAppUrl,
   type WhatsAppOrder,
 } from "@/lib/whatsapp-order.mjs";
 import { Settings, ShoppingBag } from "lucide-react";
+import { parseStoreView, storeUrl, type StoreView } from "./navigation";
 
 type Catalog = { restaurant: any; categories: any[]; products: any[] };
 type CartItem = {
@@ -42,16 +44,25 @@ export default function StorePage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  return (
+    <Suspense fallback={<StoreLoading />}>
+      <StoreContent params={params} />
+    </Suspense>
+  );
+}
+
+function StoreContent({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const category = searchParams.get("category") || "all";
+  const productKey = searchParams.get("product");
+  const view = parseStoreView(searchParams.get("view"));
   const [data, setData] = useState<Catalog | null>(null);
   const [error, setError] = useState("");
-  const [category, setCategory] = useState("all");
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [selected, setSelected] = useState<any | null>(null);
   const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
   const [quantity, setQuantity] = useState(1);
-  const [drawer, setDrawer] = useState(false);
-  const [checkout, setCheckout] = useState(false);
   const [sending, setSending] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<WhatsAppOrder | null>(
     null,
@@ -84,6 +95,20 @@ export default function StorePage({
     if (slug)
       localStorage.setItem(`mesaflow-cart-${slug}`, JSON.stringify(cart));
   }, [cart, slug]);
+  const selected = useMemo(
+    () =>
+      productKey
+        ? data?.products.find(
+            (product) =>
+              product.slug === productKey || product.id === productKey,
+          ) || null
+        : null,
+    [data, productKey],
+  );
+  useEffect(() => {
+    setSelectedAddons([]);
+    setQuantity(1);
+  }, [productKey]);
   const products = useMemo(
     () =>
       data?.products.filter(
@@ -132,10 +157,9 @@ export default function StorePage({
         addons,
       },
     ]);
-    setSelected(null);
     setSelectedAddons([]);
     setQuantity(1);
-    setDrawer(true);
+    navigate({ view: "cart" });
   }
   function remove(index: number) {
     setCart((items) => items.filter((_, i) => i !== index));
@@ -179,7 +203,7 @@ export default function StorePage({
           })),
         }),
       });
-      setConfirmedOrder({
+      const confirmation: WhatsAppOrder = {
         number: result.public_number,
         restaurantName: String(data?.restaurant?.name || ""),
         items: cart.map((item) => ({
@@ -209,15 +233,42 @@ export default function StorePage({
         paymentLabel:
           PAYMENT_LABELS[form.payment_method] || form.payment_method,
         notes: form.notes.trim(),
-      });
+      };
+      setConfirmedOrder(confirmation);
+      sessionStorage.setItem(
+        `mesaflow-confirmed-order-${slug}`,
+        JSON.stringify(confirmation),
+      );
       setCart([]);
-      setCheckout(false);
-      setDrawer(false);
+      navigate({ view: "success" });
     } catch (e: any) {
       setError(e.message);
     } finally {
       setSending(false);
     }
+  }
+  useEffect(() => {
+    if (view !== "success" || confirmedOrder) return;
+    const saved = sessionStorage.getItem(`mesaflow-confirmed-order-${slug}`);
+    if (saved) {
+      try {
+        setConfirmedOrder(JSON.parse(saved));
+      } catch {}
+    }
+  }, [view, confirmedOrder, slug]);
+
+  function navigate(state: {
+    category?: string;
+    product?: string;
+    view?: StoreView;
+  }) {
+    router.push(
+      storeUrl(slug, {
+        category: state.category ?? category,
+        product: state.product,
+        view: state.view,
+      }),
+    );
   }
   if (error && !data)
     return (
@@ -232,59 +283,7 @@ export default function StorePage({
         </div>
       </main>
     );
-  if (!data)
-    return (
-      <main className="store-loading" aria-label="Carregando loja">
-        <header>
-          <div className="store-loading-wrap">
-            <span className="store-loading-logo" />
-            <div className="store-loading-brand">
-              <i />
-              <i />
-            </div>
-            <span className="store-loading-cart" />
-          </div>
-        </header>
-        <div className="store-loading-wrap">
-          <section className="store-loading-hero">
-            <div>
-              <i />
-              <b />
-              <b />
-              <span />
-            </div>
-            <em />
-          </section>
-          <nav className="store-loading-cats">
-            <i />
-            <i />
-            <i />
-            <i />
-          </nav>
-          <div className="store-loading-title">
-            <div>
-              <i />
-              <b />
-            </div>
-            <span />
-          </div>
-          <section className="store-loading-grid">
-            {[0, 1, 2].map((i) => (
-              <article key={i}>
-                <div />
-                <i />
-                <b />
-                <span />
-                <footer>
-                  <strong />
-                  <em />
-                </footer>
-              </article>
-            ))}
-          </section>
-        </div>
-      </main>
-    );
+  if (!data) return <StoreLoading />;
   const r = data.restaurant;
   const theme = {
     "--brand": r.primary_color || "#b93822",
@@ -341,7 +340,7 @@ export default function StorePage({
             ) : null}
             <button
               className="store-cart"
-              onClick={() => setDrawer(true)}
+              onClick={() => navigate({ view: "cart" })}
               aria-label={`Abrir sacola com ${cartCount} itens`}
             >
               <span className="cart-icon">
@@ -373,7 +372,7 @@ export default function StorePage({
         <nav className="category-nav">
           <button
             className={category === "all" ? "active" : ""}
-            onClick={() => setCategory("all")}
+            onClick={() => navigate({ category: "all" })}
           >
             Destaques
           </button>
@@ -381,7 +380,7 @@ export default function StorePage({
             <button
               className={category === c.id ? "active" : ""}
               key={c.id}
-              onClick={() => setCategory(c.id)}
+              onClick={() => navigate({ category: c.id })}
             >
               {c.name}
             </button>
@@ -399,11 +398,7 @@ export default function StorePage({
             <article
               className="product-card"
               key={p.id}
-              onClick={() => {
-                setSelected(p);
-                setSelectedAddons([]);
-                setQuantity(1);
-              }}
+              onClick={() => navigate({ product: p.slug || p.id })}
             >
               <div className={`product-art ${p.image_url ? "has-image" : ""}`}>
                 {p.image_url ? (
@@ -428,12 +423,12 @@ export default function StorePage({
         </section>
       </main>
       {selected ? (
-        <div className="overlay" onClick={() => setSelected(null)}>
+        <div className="overlay" onClick={() => navigate({})}>
           <section
             className="product-modal"
             onClick={(e) => e.stopPropagation()}
           >
-            <button className="modal-close" onClick={() => setSelected(null)}>
+            <button className="modal-close" onClick={() => navigate({})}>
               ×
             </button>
             <div
@@ -492,15 +487,15 @@ export default function StorePage({
           </section>
         </div>
       ) : null}
-      {drawer ? (
-        <div className="drawer-back" onClick={() => setDrawer(false)}>
+      {view === "cart" ? (
+        <div className="drawer-back" onClick={() => navigate({})}>
           <aside className="cart-drawer" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-head">
               <div>
                 <span className="muted-caps">SEU PEDIDO</span>
                 <h2>Sacola</h2>
               </div>
-              <button onClick={() => setDrawer(false)}>×</button>
+              <button onClick={() => navigate({})}>×</button>
             </div>
             {cart.length ? (
               <>
@@ -543,7 +538,7 @@ export default function StorePage({
                 </div>
                 <button
                   className="button button-dark full-width"
-                  onClick={() => setCheckout(true)}
+                  onClick={() => navigate({ view: "checkout" })}
                 >
                   Continuar pedido · {money(subtotal + Number(r.delivery_fee))}
                 </button>
@@ -560,10 +555,13 @@ export default function StorePage({
           </aside>
         </div>
       ) : null}
-      {checkout ? (
+      {view === "checkout" ? (
         <div className="overlay">
           <section className="checkout-modal">
-            <button className="modal-close" onClick={() => setCheckout(false)}>
+            <button
+              className="modal-close"
+              onClick={() => navigate({ view: "cart" })}
+            >
               ×
             </button>
             <span className="muted-caps">FINALIZAR PEDIDO</span>
@@ -674,7 +672,7 @@ export default function StorePage({
           </section>
         </div>
       ) : null}
-      {confirmedOrder ? (
+      {view === "success" && confirmedOrder ? (
         <div className="overlay">
           <section className="success-modal">
             <div>✓</div>
@@ -699,7 +697,11 @@ export default function StorePage({
               ) : null}
               <button
                 className="button button-light"
-                onClick={() => setConfirmedOrder(null)}
+                onClick={() => {
+                  sessionStorage.removeItem(`mesaflow-confirmed-order-${slug}`);
+                  setConfirmedOrder(null);
+                  navigate({});
+                }}
               >
                 Voltar ao cardápio
               </button>
@@ -714,5 +716,60 @@ export default function StorePage({
         </div>
       ) : null}
     </div>
+  );
+}
+
+function StoreLoading() {
+  return (
+    <main className="store-loading" aria-label="Carregando loja">
+      <header>
+        <div className="store-loading-wrap">
+          <span className="store-loading-logo" />
+          <div className="store-loading-brand">
+            <i />
+            <i />
+          </div>
+          <span className="store-loading-cart" />
+        </div>
+      </header>
+      <div className="store-loading-wrap">
+        <section className="store-loading-hero">
+          <div>
+            <i />
+            <b />
+            <b />
+            <span />
+          </div>
+          <em />
+        </section>
+        <nav className="store-loading-cats">
+          <i />
+          <i />
+          <i />
+          <i />
+        </nav>
+        <div className="store-loading-title">
+          <div>
+            <i />
+            <b />
+          </div>
+          <span />
+        </div>
+        <section className="store-loading-grid">
+          {[0, 1, 2].map((index) => (
+            <article key={index}>
+              <div />
+              <i />
+              <b />
+              <span />
+              <footer>
+                <strong />
+                <em />
+              </footer>
+            </article>
+          ))}
+        </section>
+      </div>
+    </main>
   );
 }
