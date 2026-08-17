@@ -79,10 +79,38 @@ function StoreContent({ params }: { params: Promise<{ slug: string }> }) {
     notes: "",
   });
   useEffect(() => {
-    api(`catalog?restaurant=${encodeURIComponent(slug)}`)
-      .then(setData)
-      .catch((e: Error) => setError(e.message));
+    let active = true;
+    async function loadCatalog() {
+      try {
+        const catalog = await api(
+          `catalog?restaurant=${encodeURIComponent(slug)}`,
+        );
+        if (active) {
+          setData(catalog);
+          setError("");
+        }
+      } catch (loadError) {
+        if (active) setError((loadError as Error).message);
+      }
+    }
+    loadCatalog();
+    const refreshTimer = window.setInterval(loadCatalog, 60_000);
+    return () => {
+      active = false;
+      window.clearInterval(refreshTimer);
+    };
   }, [slug]);
+  useEffect(() => {
+    if (!data) return;
+    document.documentElement.dataset.storePattern =
+      data.restaurant?.background_pattern || "none";
+    document.documentElement.dataset.storeOpen =
+      data.restaurant?.is_open === false ? "false" : "true";
+    return () => {
+      delete document.documentElement.dataset.storePattern;
+      delete document.documentElement.dataset.storeOpen;
+    };
+  }, [data]);
   useEffect(() => {
     const saved = localStorage.getItem(`mesaflow-cart-${slug}`);
     if (saved)
@@ -285,6 +313,7 @@ function StoreContent({ params }: { params: Promise<{ slug: string }> }) {
     );
   if (!data) return <StoreLoading />;
   const r = data.restaurant;
+  const isOpen = r.is_open !== false;
   const theme = {
     "--brand": r.primary_color || "#b93822",
     "--brand2": r.secondary_color || "#e7854f",
@@ -323,7 +352,7 @@ function StoreContent({ params }: { params: Promise<{ slug: string }> }) {
             </div>
             <div>
               <strong>{r.name}</strong>
-              <small>● Aberto agora</small>
+              <small>{isOpen ? "● Aberto agora" : "● Fechado agora"}</small>
             </div>
           </div>
           <div className="store-actions">
@@ -355,7 +384,7 @@ function StoreContent({ params }: { params: Promise<{ slug: string }> }) {
       <main className="store-wrap">
         <section className="store-hero" style={heroInline}>
           <div>
-            <span>● ABERTO AGORA</span>
+            <span>{isOpen ? "● ABERTO AGORA" : "● FECHADO AGORA"}</span>
             <h1>{r.tagline || "Comida feita do seu jeito."}</h1>
             <p>
               Peça direto do restaurante. Simples, rápido e sem intermediários.
@@ -538,9 +567,12 @@ function StoreContent({ params }: { params: Promise<{ slug: string }> }) {
                 </div>
                 <button
                   className="button button-dark full-width"
+                  disabled={!isOpen}
                   onClick={() => navigate({ view: "checkout" })}
                 >
-                  Continuar pedido · {money(subtotal + Number(r.delivery_fee))}
+                  {isOpen
+                    ? `Continuar pedido · ${money(subtotal + Number(r.delivery_fee))}`
+                    : "Loja fechada no momento"}
                 </button>
               </>
             ) : (
@@ -664,10 +696,14 @@ function StoreContent({ params }: { params: Promise<{ slug: string }> }) {
             </div>
             <button
               className="button button-dark full-width"
-              disabled={sending || !paymentMethods.length}
+              disabled={sending || !paymentMethods.length || !isOpen}
               onClick={submitOrder}
             >
-              {sending ? "Enviando…" : "Confirmar pedido"}
+              {!isOpen
+                ? "Loja fechada no momento"
+                : sending
+                  ? "Enviando…"
+                  : "Confirmar pedido"}
             </button>
           </section>
         </div>

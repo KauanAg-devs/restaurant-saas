@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import StorePatternApplier from "./StorePatternApplier";
-import StoreOpenState from "./StoreOpenState";
 import "./globals.css";
 import "./polish.css";
 import "./admin-shortcut.css";
@@ -33,11 +31,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
-      <body>
-        {children}
-        <StorePatternApplier />
-        <StoreOpenState />
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
