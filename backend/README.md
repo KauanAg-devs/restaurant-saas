@@ -1,6 +1,6 @@
 # MesaFlow API
 
-Backend standalone do MesaFlow em NestJS + PostgreSQL. Não depende de Supabase em runtime.
+Backend standalone do MesaFlow em NestJS + PostgreSQL. Ele pode rodar como processo Node ou pela entrada serverless do projeto principal.
 
 ## Local
 
@@ -27,20 +27,18 @@ A API mantém os caminhos usados pelo frontend existente, sob `/api`:
 - `POST|PATCH|DELETE /api/product`
 - `PATCH /api/settings`
 - `PATCH /api/branding`
+- `POST /api/product-image`
+- `POST /api/logo-image`
 
 ## Segurança
 
-O navegador nunca acessa PostgreSQL diretamente. Autorização multi-tenant acontece na API através de `restaurant_members`. Senhas são armazenadas somente como bcrypt hash e sessões são JWT Bearer tokens.
+O navegador nunca acessa PostgreSQL diretamente. Autorização multi-tenant acontece na API através de `restaurant_members`. Senhas são armazenadas somente como bcrypt hash e sessões são JWT Bearer tokens. Rate limits sensíveis são persistidos no PostgreSQL.
 
-## Antes do cutover
+## Estrutura
 
-1. Provisionar um PostgreSQL novo.
-2. Executar a migration inicial.
-3. Adicionar storage S3/R2 e `/api/product-image`.
-4. Adicionar recuperação de senha + SMTP.
-5. Adicionar rate limiting persistente.
-6. Migrar dados do banco atual.
-7. Executar testes de paridade e isolamento.
-8. Apontar `NEXT_PUBLIC_API_URL` para o novo backend.
+- Controllers recebem HTTP, autenticam e delegam.
+- `admin/admin.service.ts` e `orders/orders.service.ts` contêm regras e persistência.
+- `storage/object-storage.ts` é a interface para imagens; o adaptador atual usa Vercel Blob.
+- `database/migrations` é a fonte de verdade do schema em produção.
 
-O Supabase não deve ser necessário depois do passo 8; ele permanece apenas como origem temporária durante a migração de dados.
+Veja também `../docs/architecture.md` e `../docs/operations.md`.

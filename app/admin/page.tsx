@@ -1,21 +1,260 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { API, api } from '@/lib/api';
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import BrandEditor from "./components/BrandEditor";
+import Catalog from "./components/Catalog";
+import Metric from "./components/Metric";
+import Orders from "./components/Orders";
+import StoreSettings from "./components/StoreSettings";
+import { formatMoney } from "./format";
 
-type AdminData={restaurant:any;role:string;orders:any[];products:any[];categories:any[]};
-const money=(value:number)=>Number(value||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const translateAuthError=(message:string)=>{const m=(message||'').toLowerCase();if(m.includes('invalid login credentials'))return 'E-mail ou senha incorretos.';if(m.includes('email not confirmed'))return 'Seu e-mail ainda não foi confirmado.';if(m.includes('too many requests'))return 'Muitas tentativas. Aguarde um pouco e tente novamente.';return message||'Não foi possível entrar agora.'};
-const presets=[{name:'Bistrô',primary:'#b93822',secondary:'#e7854f',bg:'#fff9f1',surface:'#ffffff',text:'#171717',muted:'#777777'},{name:'Premium',primary:'#171717',secondary:'#b99155',bg:'#f5f1e8',surface:'#ffffff',text:'#171717',muted:'#746b60'},{name:'Verde',primary:'#166534',secondary:'#84cc16',bg:'#f0fdf4',surface:'#ffffff',text:'#163020',muted:'#5d7162'},{name:'Oceano',primary:'#075985',secondary:'#06b6d4',bg:'#ecfeff',surface:'#ffffff',text:'#0c2533',muted:'#60727b'},{name:'Doce',primary:'#be185d',secondary:'#f472b6',bg:'#fdf2f8',surface:'#ffffff',text:'#3b1728',muted:'#806273'},{name:'Noturno',primary:'#7c3aed',secondary:'#ec4899',bg:'#111827',surface:'#1f2937',text:'#f9fafb',muted:'#9ca3af'}];
-
-export default function AdminPage(){const [tenant,setTenant]=useState('sabor-da-casa');const [token,setToken]=useState('');const [sessionReady,setSessionReady]=useState(false);const [email,setEmail]=useState('');const [password,setPassword]=useState('');const [data,setData]=useState<AdminData|null>(null);const [error,setError]=useState('');const [tab,setTab]=useState('Visão geral');const [loading,setLoading]=useState(false);useEffect(()=>{setTenant(new URLSearchParams(location.search).get('restaurant')||'sabor-da-casa');setToken(localStorage.getItem('mesaflow-token')||'');setSessionReady(true)},[]);useEffect(()=>{if(sessionReady&&token)load()},[sessionReady,token,tenant]);async function load(){try{setLoading(true);setData(await api(`admin?restaurant=${tenant}`,{headers:{authorization:`Bearer ${token}`}}));setError('')}catch(e:any){setError(translateAuthError(e.message));setData(null)}finally{setLoading(false)}}async function login(){try{setLoading(true);const result:any=await api('login',{method:'POST',body:JSON.stringify({email,password})});localStorage.setItem('mesaflow-token',result.access_token);setToken(result.access_token);setError('')}catch(e:any){setError(translateAuthError(e.message))}finally{setLoading(false)}}const orders=data?.orders||[];const revenue=orders.filter(o=>o.status!=='cancelado').reduce((s,o)=>s+Number(o.total),0);const tabs=['Visão geral','Pedidos','Cardápio','Aparência','Configurações'];if(!sessionReady||(token&&!data))return <main className="admin-session-loading" aria-live="polite"><div className="admin-session-loading-mark">M</div><span>Carregando painel…</span></main>;if(!token)return <main className="admin-login"><section><span className="eyebrow">MESAFLOW · RESTAURANT OS</span><h1>Operação simples. Marca forte.</h1><p>Pedidos, cardápio e identidade da sua loja em um só lugar.</p></section><form onSubmit={e=>{e.preventDefault();login()}}><div className="admin-mark">M</div><span className="muted-caps">ACESSO DO RESTAURANTE</span><h2>Bem-vindo de volta</h2><p>Entre para acessar seu restaurante.</p><label>E-mail<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Senha<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button className="button button-dark" disabled={loading}>{loading?'Entrando…':'Entrar no painel'}</button>{error?<small className="form-error">{error}</small>:null}</form></main>;if(!data)return null;return <div className="admin-shell"><aside className="admin-sidebar"><div className="admin-brand"><span className="admin-mark">M</span><div><b>MesaFlow</b><small>Restaurant OS</small></div></div><div className="tenant-chip"><span>{data.restaurant.name?.[0]}</span><div><b>{data.restaurant.name}</b><small>{data.role==='owner'?'Proprietário':'Equipe'}</small></div></div><nav>{tabs.map(item=><button className={tab===item?'selected':''} key={item} onClick={()=>setTab(item)}>{item}</button>)}</nav><div className="sidebar-bottom"><button onClick={()=>{localStorage.removeItem('mesaflow-token');setToken('');setData(null)}}>Sair</button></div></aside><main className="admin-content"><header><div><span className="muted-caps">{data.restaurant.name}</span><h1>{tab}</h1><p>{tab==='Aparência'?'Defina a identidade visual da loja sem complicação.':tab==='Cardápio'?'Crie produtos, envie fotos e controle a disponibilidade.':tab==='Configurações'?'Configure operação, entrega, pagamentos e atendimento.':'Gerencie esta área da sua operação.'}</p></div><a className="admin-open-store" href={`/loja/${tenant}`} target="_blank" rel="noreferrer"><span aria-hidden="true">↗</span>Abrir loja</a></header>{tab==='Visão geral'?<><section className="metric-grid"><Metric label="Faturamento" value={money(revenue)} detail="pedidos registrados"/><Metric label="Pedidos" value={String(orders.length)} detail="total no período"/></section><Orders orders={orders} token={token} tenant={tenant} reload={load}/></>:null}{tab==='Pedidos'?<Orders orders={orders} token={token} tenant={tenant} reload={load}/>:null}{tab==='Cardápio'?<Catalog products={data.products||[]} categories={data.categories||[]} token={token} tenant={tenant} reload={load}/>:null}{tab==='Aparência'?<BrandEditor restaurant={data.restaurant} token={token} tenant={tenant} reload={load}/>:null}{tab==='Configurações'?<StoreSettings restaurant={data.restaurant} token={token} tenant={tenant} reload={load}/>:null}</main></div>}
-function Metric({label,value,detail}:{label:string;value:string;detail:string}){return <article className="metric-card"><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>}
-const statusLabels:any={novo:'Novo',confirmado:'Aceito',preparando:'Em preparo',pronto:'Pronto',saiu_para_entrega:'Saiu para entrega',concluido:'Concluído',cancelado:'Cancelado'};
-function Orders({orders,token,tenant,reload}:{orders:any[];token:string;tenant:string;reload:()=>void}){const [busy,setBusy]=useState('');async function change(id:string,status:string){try{setBusy(id);await api(`status?restaurant=${tenant}`,{method:'PATCH',headers:{authorization:`Bearer ${token}`},body:JSON.stringify({id,status})});await reload()}finally{setBusy('')}}function actions(o:any){if(o.status==='novo')return [['confirmado','Aceitar'],['cancelado','Cancelar']];if(o.status==='confirmado')return [['preparando','Iniciar preparo'],['cancelado','Cancelar']];if(o.status==='preparando')return o.fulfillment==='entrega'?[['saiu_para_entrega','Saiu para entrega'],['cancelado','Cancelar']]:[['pronto','Pronto para retirada'],['cancelado','Cancelar']];if(o.status==='pronto')return [['concluido','Concluir']];if(o.status==='saiu_para_entrega')return [['concluido','Concluir entrega']];return []}return <section className="admin-panel"><div className="panel-title"><h2>Pedidos recentes</h2></div><div className="order-table">{orders.slice(0,20).map(o=><div className="order-row operational-order" key={o.id}><b>#{o.public_number}</b><span>{o.customer_name}</span><span>{statusLabels[o.status]||o.status}</span><strong>{money(o.total)}</strong><div className="order-actions">{actions(o).map(([status,label]:any)=><button key={status} disabled={busy===o.id} className={status==='cancelado'?'order-cancel':'order-next'} onClick={()=>change(o.id,status)}>{label}</button>)}</div></div>)}{!orders.length?<div className="menu-empty">Nenhum pedido recebido ainda.</div>:null}</div></section>}
-
-const blankProduct={id:'',name:'',description:'',price:'',category_id:'',image_url:'',featured:false,available:true,active:true,sort_order:0};
-function Catalog({products,categories,token,tenant,reload}:{products:any[];categories:any[];token:string;tenant:string;reload:()=>void}){const [editing,setEditing]=useState<any|null>(null);const [form,setForm]=useState<any>(blankProduct);const [busy,setBusy]=useState(false);const [uploading,setUploading]=useState(false);const [message,setMessage]=useState('');function open(product?:any){setMessage('');setForm(product?{...product,price:String(product.price??'')}:{...blankProduct,category_id:categories[0]?.id||''});setEditing(product||{new:true})}async function upload(file?:File){if(!file)return;if(file.size>5242880){setMessage('A imagem deve ter no máximo 5 MB.');return}try{setUploading(true);const r=await fetch(`${API}/product-image?restaurant=${encodeURIComponent(tenant)}`,{method:'POST',headers:{authorization:`Bearer ${token}`,'content-type':file.type},body:file});const d=await r.json();if(!r.ok)throw new Error(d.error||'Falha no upload');setForm((f:any)=>({...f,image_url:d.url}))}catch(e:any){setMessage(e.message)}finally{setUploading(false)}}async function save(){if(!form.name.trim()||!form.category_id||form.price===''){setMessage('Preencha nome, categoria e preço.');return}try{setBusy(true);const isNew=!form.id;await api(`product?restaurant=${tenant}`,{method:isNew?'POST':'PATCH',headers:{authorization:`Bearer ${token}`},body:JSON.stringify({...form,price:Number(form.price)})});await reload();setEditing(null)}catch(e:any){setMessage(e.message)}finally{setBusy(false)}}async function remove(){if(!form.id)return;try{setBusy(true);await api(`product?restaurant=${tenant}&id=${form.id}`,{method:'DELETE',headers:{authorization:`Bearer ${token}`}});await reload();setEditing(null)}finally{setBusy(false)}}return <><section className="admin-panel catalog-panel"><div className="catalog-head"><div><span className="muted-caps">GESTÃO DO CARDÁPIO</span><h2>Produtos</h2><p>{products.length} cadastrados · {products.filter(p=>p.available&&p.active).length} disponíveis</p></div><button className="button button-dark" onClick={()=>open()}>+ Novo produto</button></div><div className="catalog-list">{products.map(p=><button className="catalog-row" key={p.id} onClick={()=>open(p)}><div className="catalog-thumb">{p.image_url?<img src={p.image_url} alt=""/>:<span>Sem foto</span>}</div><div className="catalog-main"><b>{p.name}</b><small>{categories.find(c=>c.id===p.category_id)?.name||'Sem categoria'} · {p.available?'Disponível':'Indisponível'}</small></div><strong>{money(p.price)}</strong><span className={`catalog-state ${p.available&&p.active?'on':'off'}`}>{p.available&&p.active?'Ativo':'Pausado'}</span><span className="catalog-edit">Editar</span></button>)}</div></section>{editing?<div className="product-editor-back"><section className="product-editor"><div className="product-editor-head"><h2>{form.id?'Editar produto':'Novo produto'}</h2><button onClick={()=>setEditing(null)}>×</button></div><div className="image-upload"><div>{form.image_url?<img src={form.image_url} alt=""/>:<span>Imagem do produto</span>}</div><label className="image-upload-button">{uploading?'Enviando…':'Enviar foto'}<input type="file" accept="image/*" onChange={e=>upload(e.target.files?.[0])}/></label></div><div className="product-form"><label>Nome<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></label><label>Preço<input type="number" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/></label><label className="wide">Descrição<textarea value={form.description||''} onChange={e=>setForm({...form,description:e.target.value})}/></label><label>Categoria<select value={form.category_id} onChange={e=>setForm({...form,category_id:e.target.value})}>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label><label className="check"><input type="checkbox" checked={form.available} onChange={e=>setForm({...form,available:e.target.checked})}/>Disponível</label></div><div className="product-editor-actions">{form.id?<button className="danger-button" onClick={remove}>Excluir</button>:<span/>}<button className="button button-dark" onClick={save}>Salvar produto</button></div></section></div>:null}</>}
-function BrandEditor({restaurant,token,tenant,reload}:{restaurant:any;token:string;tenant:string;reload:()=>void}){const [form,setForm]=useState({...restaurant});const [saving,setSaving]=useState(false);const [uploading,setUploading]=useState(false);const [saved,setSaved]=useState(false);const [message,setMessage]=useState('');const patch=(key:string,value:any)=>{setSaved(false);setForm((f:any)=>({...f,[key]:value}))};async function uploadLogo(file?:File){if(!file)return;if(file.size>4*1024*1024){setMessage('A logo deve ter no máximo 4 MB.');return}try{setMessage('');setUploading(true);const response=await fetch(`${API}/logo-image?restaurant=${encodeURIComponent(tenant)}`,{method:'POST',headers:{authorization:`Bearer ${token}`,'content-type':file.type},body:file});const result=await response.json();if(!response.ok)throw new Error(result.error||result.message||'Falha no envio da logo.');patch('logo_url',result.url)}catch(e:any){setMessage(e.message)}finally{setUploading(false)}}async function save(){try{setSaving(true);setMessage('');await api(`branding?restaurant=${encodeURIComponent(tenant)}`,{method:'PATCH',headers:{authorization:`Bearer ${token}`},body:JSON.stringify(form)});await reload();setSaved(true)}catch(e:any){setMessage(e.message)}finally{setSaving(false)}}return <div className="appearance-shell"><section className="appearance-editor"><div className="appearance-card"><div className="section-heading"><div><span className="muted-caps">IDENTIDADE</span><h2>Marca do restaurante</h2></div></div><div className="logo-editor"><div className="logo-preview">{form.logo_url?<img src={form.logo_url} alt="Prévia da logo do restaurante"/>:<span>{form.name?.[0]||'M'}</span>}</div><div className="logo-editor-copy"><b>Logo do restaurante</b><p>Use uma imagem quadrada em PNG, JPEG, WebP ou GIF, com até 4 MB.</p><div className="logo-editor-actions"><label className="button button-light">{uploading?'Enviando…':form.logo_url?'Trocar logo':'Enviar logo'}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" disabled={uploading} onChange={e=>uploadLogo(e.target.files?.[0])}/></label>{form.logo_url?<button type="button" className="logo-remove" onClick={()=>patch('logo_url',null)}>Remover</button>:null}</div></div></div><div className="simple-grid"><label>Nome<input value={form.name||''} onChange={e=>patch('name',e.target.value)}/></label><label>Slogan<input value={form.tagline||''} onChange={e=>patch('tagline',e.target.value)}/></label></div></div><div className="appearance-card"><div className="section-heading"><h2>Paleta principal</h2></div><div className="essential-colors">{['primary_color','secondary_color','background_color','surface_color','text_color','muted_text_color'].map(k=><Color key={k} label={k.replace('_color','').replace('_',' ')} value={form[k]||'#ffffff'} onChange={v=>patch(k,v)}/>)}</div></div>{message?<p className="appearance-error" role="alert">{message}</p>:null}<div className="appearance-actions"><button className="button button-dark" disabled={saving||uploading} onClick={save}>{saving?'Salvando…':'Salvar aparência'}</button>{saved?<span>✓ Salvo</span>:null}</div></section></div>}
-const paymentOptions=[['pix','Pix'],['credit_card','Cartão de crédito'],['debit_card','Cartão de débito'],['cash','Dinheiro'],['alelo','Alelo'],['ticket','Ticket'],['vr','VR Benefícios'],['pluxee','Pluxee'],['ben','Ben'],['verocard','Verocard'],['sodexo','Sodexo'],['other_voucher','Outro voucher']];
-function StoreSettings({restaurant,token,tenant,reload}:{restaurant:any;token:string;tenant:string;reload:()=>void}){const [form,setForm]=useState<any>({...restaurant,payment_methods:Array.isArray(restaurant.payment_methods)?restaurant.payment_methods:[]});const [saving,setSaving]=useState(false);const [message,setMessage]=useState('');const patch=(k:string,v:any)=>setForm((f:any)=>({...f,[k]:v}));const togglePayment=(id:string)=>setForm((f:any)=>({...f,payment_methods:f.payment_methods.includes(id)?f.payment_methods.filter((x:string)=>x!==id):[...f.payment_methods,id]}));useEffect(()=>{const sync=(event:Event)=>{const detail=(event as CustomEvent<{tenant:string;methods:string[]}>).detail;if(detail?.tenant===tenant&&Array.isArray(detail.methods))setForm((current:any)=>({...current,payment_methods:detail.methods}))};window.addEventListener('mesaflow:payment-methods-changed',sync);return()=>window.removeEventListener('mesaflow:payment-methods-changed',sync)},[tenant]);async function save(){if(!form.payment_methods.length){setMessage('Selecione pelo menos um meio de pagamento.');return}try{setSaving(true);await api(`settings?restaurant=${tenant}`,{method:'PATCH',headers:{authorization:`Bearer ${token}`},body:JSON.stringify({active:Boolean(form.active),delivery_minutes_min:Number(form.delivery_minutes_min||0),delivery_minutes_max:Number(form.delivery_minutes_max||0),delivery_fee:Number(form.delivery_fee||0),accepts_delivery:Boolean(form.accepts_delivery),accepts_pickup:Boolean(form.accepts_pickup),minimum_order:Number(form.minimum_order||0),whatsapp:String(form.whatsapp??'').trim(),address_text:String(form.address_text??'').trim(),opening_hours:form.opening_hours||{},payment_methods:form.payment_methods})});await reload();setMessage('✓ Configurações salvas.')}catch(e:any){setMessage(e.message)}finally{setSaving(false)}}return <section className="settings-page"><div className="settings-grid"><div className="settings-card"><h2>Status da loja</h2><label className="switch-line"><input type="checkbox" checked={Boolean(form.active)} onChange={e=>patch('active',e.target.checked)}/><span>{form.active?'Loja ativa':'Loja pausada'}</span></label></div><div className="settings-card"><h2>Entrega e retirada</h2><div className="settings-options"><label className="switch-line"><input type="checkbox" checked={Boolean(form.accepts_delivery)} onChange={e=>patch('accepts_delivery',e.target.checked)}/><span>Aceitar entrega</span></label><label className="switch-line"><input type="checkbox" checked={Boolean(form.accepts_pickup)} onChange={e=>patch('accepts_pickup',e.target.checked)}/><span>Permitir retirada</span></label></div><div className="settings-fields"><label>Tempo mínimo<input type="number" value={form.delivery_minutes_min??30} onChange={e=>patch('delivery_minutes_min',e.target.value)}/></label><label>Tempo máximo<input type="number" value={form.delivery_minutes_max??45} onChange={e=>patch('delivery_minutes_max',e.target.value)}/></label><label>Taxa de entrega<input type="number" value={form.delivery_fee??0} onChange={e=>patch('delivery_fee',e.target.value)}/></label><label>Pedido mínimo<input type="number" value={form.minimum_order??0} onChange={e=>patch('minimum_order',e.target.value)}/></label></div></div><div className="settings-card settings-payments"><h2>Meios de pagamento</h2><p>Selecione exatamente o que seu restaurante aceita.</p><div className="payment-method-grid">{paymentOptions.map(([id,label])=><label className={`payment-method-option ${form.payment_methods.includes(id)?'selected':''}`} key={id}><input type="checkbox" checked={form.payment_methods.includes(id)} onChange={()=>togglePayment(id)}/><span>{label}</span></label>)}</div></div><div className="settings-card"><h2>Contato</h2><div className="settings-fields single"><label>WhatsApp<input value={form.whatsapp||''} onChange={e=>patch('whatsapp',e.target.value)}/></label><label>Endereço<input value={form.address_text||''} onChange={e=>patch('address_text',e.target.value)}/></label></div></div></div><div className="settings-save"><div>{message||'As alterações afetam a operação da loja.'}</div><button className="button button-dark" onClick={save} disabled={saving}>{saving?'Salvando…':'Salvar configurações'}</button></div></section>}
-function Color({label,value,onChange}:{label:string;value:string;onChange:(v:string)=>void}){return <label className="compact-color"><span>{label}</span><div><input type="color" value={value} onChange={e=>onChange(e.target.value)}/><input value={value} onChange={e=>onChange(e.target.value)}/></div></label>}
+type AdminData = {
+  restaurant: any;
+  role: string;
+  orders: any[];
+  products: any[];
+  categories: any[];
+};
+const translateAuthError = (message: string) => {
+  const m = (message || "").toLowerCase();
+  if (m.includes("invalid login credentials"))
+    return "E-mail ou senha incorretos.";
+  if (m.includes("email not confirmed"))
+    return "Seu e-mail ainda não foi confirmado.";
+  if (m.includes("too many requests"))
+    return "Muitas tentativas. Aguarde um pouco e tente novamente.";
+  return message || "Não foi possível entrar agora.";
+};
+export default function AdminPage() {
+  const [tenant, setTenant] = useState("sabor-da-casa");
+  const [token, setToken] = useState("");
+  const [sessionReady, setSessionReady] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [data, setData] = useState<AdminData | null>(null);
+  const [error, setError] = useState("");
+  const [tab, setTab] = useState("Visão geral");
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    setTenant(
+      new URLSearchParams(location.search).get("restaurant") || "sabor-da-casa",
+    );
+    setToken(localStorage.getItem("mesaflow-token") || "");
+    setSessionReady(true);
+  }, []);
+  useEffect(() => {
+    if (sessionReady && token) load();
+  }, [sessionReady, token, tenant]);
+  async function load() {
+    try {
+      setLoading(true);
+      setData(
+        await api(`admin?restaurant=${tenant}`, {
+          headers: { authorization: `Bearer ${token}` },
+        }),
+      );
+      setError("");
+    } catch (e: any) {
+      setError(translateAuthError(e.message));
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function login() {
+    try {
+      setLoading(true);
+      const result: any = await api("login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+      localStorage.setItem("mesaflow-token", result.access_token);
+      setToken(result.access_token);
+      setError("");
+    } catch (e: any) {
+      setError(translateAuthError(e.message));
+    } finally {
+      setLoading(false);
+    }
+  }
+  const orders = data?.orders || [];
+  const revenue = orders
+    .filter((o) => o.status !== "cancelado")
+    .reduce((s, o) => s + Number(o.total), 0);
+  const tabs = [
+    "Visão geral",
+    "Pedidos",
+    "Cardápio",
+    "Aparência",
+    "Configurações",
+  ];
+  if (!sessionReady || (token && !data))
+    return (
+      <main className="admin-session-loading" aria-live="polite">
+        <div className="admin-session-loading-mark">M</div>
+        <span>Carregando painel…</span>
+      </main>
+    );
+  if (!token)
+    return (
+      <main className="admin-login">
+        <section>
+          <span className="eyebrow">MESAFLOW · RESTAURANT OS</span>
+          <h1>Operação simples. Marca forte.</h1>
+          <p>Pedidos, cardápio e identidade da sua loja em um só lugar.</p>
+        </section>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            login();
+          }}
+        >
+          <div className="admin-mark">M</div>
+          <span className="muted-caps">ACESSO DO RESTAURANTE</span>
+          <h2>Bem-vindo de volta</h2>
+          <p>Entre para acessar seu restaurante.</p>
+          <label>
+            E-mail
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Senha
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </label>
+          <button className="button button-dark" disabled={loading}>
+            {loading ? "Entrando…" : "Entrar no painel"}
+          </button>
+          {error ? <small className="form-error">{error}</small> : null}
+        </form>
+      </main>
+    );
+  if (!data) return null;
+  return (
+    <div className="admin-shell">
+      <aside className="admin-sidebar">
+        <div className="admin-brand">
+          <span className="admin-mark">M</span>
+          <div>
+            <b>MesaFlow</b>
+            <small>Restaurant OS</small>
+          </div>
+        </div>
+        <div className="tenant-chip">
+          <span>{data.restaurant.name?.[0]}</span>
+          <div>
+            <b>{data.restaurant.name}</b>
+            <small>{data.role === "owner" ? "Proprietário" : "Equipe"}</small>
+          </div>
+        </div>
+        <nav>
+          {tabs.map((item) => (
+            <button
+              className={tab === item ? "selected" : ""}
+              key={item}
+              onClick={() => setTab(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-bottom">
+          <button
+            onClick={() => {
+              localStorage.removeItem("mesaflow-token");
+              setToken("");
+              setData(null);
+            }}
+          >
+            Sair
+          </button>
+        </div>
+      </aside>
+      <main className="admin-content">
+        <header>
+          <div>
+            <span className="muted-caps">{data.restaurant.name}</span>
+            <h1>{tab}</h1>
+            <p>
+              {tab === "Aparência"
+                ? "Defina a identidade visual da loja sem complicação."
+                : tab === "Cardápio"
+                  ? "Crie produtos, envie fotos e controle a disponibilidade."
+                  : tab === "Configurações"
+                    ? "Configure operação, entrega, pagamentos e atendimento."
+                    : "Gerencie esta área da sua operação."}
+            </p>
+          </div>
+          <a
+            className="admin-open-store"
+            href={`/loja/${tenant}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <span aria-hidden="true">↗</span>Abrir loja
+          </a>
+        </header>
+        {tab === "Visão geral" ? (
+          <>
+            <section className="metric-grid">
+              <Metric
+                label="Faturamento"
+                value={formatMoney(revenue)}
+                detail="pedidos registrados"
+              />
+              <Metric
+                label="Pedidos"
+                value={String(orders.length)}
+                detail="total no período"
+              />
+            </section>
+            <Orders
+              orders={orders}
+              token={token}
+              tenant={tenant}
+              reload={load}
+            />
+          </>
+        ) : null}
+        {tab === "Pedidos" ? (
+          <Orders orders={orders} token={token} tenant={tenant} reload={load} />
+        ) : null}
+        {tab === "Cardápio" ? (
+          <Catalog
+            products={data.products || []}
+            categories={data.categories || []}
+            token={token}
+            tenant={tenant}
+            reload={load}
+          />
+        ) : null}
+        {tab === "Aparência" ? (
+          <BrandEditor
+            restaurant={data.restaurant}
+            token={token}
+            tenant={tenant}
+            reload={load}
+          />
+        ) : null}
+        {tab === "Configurações" ? (
+          <StoreSettings
+            restaurant={data.restaurant}
+            token={token}
+            tenant={tenant}
+            reload={load}
+          />
+        ) : null}
+      </main>
+    </div>
+  );
+}

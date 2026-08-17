@@ -1,10 +1,60 @@
-import { BadRequestException, Body, Controller, Module, Post, Req } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { DataSource, In } from 'typeorm';
-import { OrderEntity, OrderItemEntity, ProductAddonEntity, ProductEntity, RestaurantEntity } from '../database/entities';
-import { clientIp } from '../security/client-ip';
-import { RateLimitModule, RateLimitService } from '../security/rate-limit.module';
+import { Body, Controller, Module, Post, Req } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import {
+  OrderEntity,
+  OrderItemEntity,
+  ProductAddonEntity,
+  ProductEntity,
+  RestaurantEntity,
+} from "../database/entities";
+import { clientIp } from "../security/client-ip";
+import {
+  RateLimitModule,
+  RateLimitService,
+} from "../security/rate-limit.module";
+import { OrdersService } from "./orders.service";
 
-@Controller('order') class OrdersController{constructor(private db:DataSource,private limits:RateLimitService){} @Post() async create(@Req() req:any,@Body() b:any){const restaurantSlug=String(b.restaurant_slug||''),ip=clientIp(req),key=`${ip}:${restaurantSlug}`;await this.limits.hit('order-1m',key,5,60);await this.limits.hit('order-15m',key,25,900);const phone=String(b.customer_phone||'').replace(/\D/g,'');if(phone){await this.limits.hit('order-phone-15m',`${restaurantSlug}:${phone}`,8,900)}return this.db.transaction(async m=>{const r=await m.findOne(RestaurantEntity,{where:{slug:restaurantSlug}});if(!r||!r.active)throw new BadRequestException('Restaurante não encontrado');if(b.fulfillment_type==='delivery'&&!r.acceptsDelivery)throw new BadRequestException('Entrega indisponível');if(b.fulfillment_type==='pickup'&&!r.acceptsPickup)throw new BadRequestException('Retirada indisponível');if(!r.paymentMethods.includes(String(b.payment_method)))throw new BadRequestException('Forma de pagamento inválida');const items=Array.isArray(b.items)?b.items:[];if(!items.length)throw new BadRequestException('Carrinho vazio');const products=await m.findBy(ProductEntity,{id:In(items.map((i:any)=>String(i.product_id))),restaurantId:r.id,active:true,available:true});if(products.length!==new Set(items.map((i:any)=>String(i.product_id))).size)throw new BadRequestException('Produto inválido ou indisponível');const addonIds=items.flatMap((i:any)=>Array.isArray(i.addon_ids)?i.addon_ids.map(String):[]);const addons=addonIds.length?await m.findBy(ProductAddonEntity,{id:In(addonIds),active:true}):[];let subtotal=0;const rows:any[]=[];for(const item of items){const p=products.find(x=>x.id===String(item.product_id))!;const chosen=addons.filter(a=>(item.addon_ids||[]).includes(a.id)&&a.productId===p.id);const qty=Math.max(1,Math.min(99,Number(item.quantity||1)));const addonTotal=chosen.reduce((s,a)=>s+Number(a.price),0);subtotal+=(Number(p.price)+addonTotal)*qty;rows.push({p,chosen,qty,addonTotal})}if(subtotal<Number(r.minimumOrder))throw new BadRequestException(`Pedido mínimo de R$ ${Number(r.minimumOrder).toFixed(2)}`);const fee=b.fulfillment_type==='delivery'?Number(r.deliveryFee):0;const publicNumber=String(Date.now()).slice(-9);const order=await m.save(OrderEntity,m.create(OrderEntity,{restaurantId:r.id,publicNumber,customerName:String(b.customer_name||'').trim(),customerPhone:String(b.customer_phone||'').trim(),fulfillmentType:b.fulfillment_type,addressText:formatAddress(b),notes:String(b.notes||''),paymentMethod:String(b.payment_method),subtotal:String(subtotal.toFixed(2)),deliveryFee:String(fee.toFixed(2)),total:String((subtotal+fee).toFixed(2)),status:'novo'}));for(const row of rows)await m.save(OrderItemEntity,m.create(OrderItemEntity,{orderId:order.id,productId:row.p.id,productName:row.p.name,quantity:row.qty,unitPrice:row.p.price,addonsTotal:String(row.addonTotal.toFixed(2)),addonSnapshot:row.chosen.map((a:any)=>({id:a.id,name:a.name,price:Number(a.price)}))}));return{public_number:publicNumber,id:order.id,total:Number(order.total)}})}}
-@Module({imports:[RateLimitModule,TypeOrmModule.forFeature([RestaurantEntity,ProductEntity,ProductAddonEntity,OrderEntity,OrderItemEntity])],controllers:[OrdersController]}) export class OrdersModule{}
-function formatAddress(b:any){return b.fulfillment_type==='delivery'?[b.street,b.number,b.neighborhood].filter(Boolean).join(', '):''}
+@Controller("order")
+class OrdersController {
+  constructor(
+    private orders: OrdersService,
+    private limits: RateLimitService,
+  ) {}
+
+  @Post()
+  async create(@Req() req: any, @Body() body: any) {
+    const restaurantSlug = String(body.restaurant_slug || "");
+    const ip = clientIp(req);
+    const key = `${ip}:${restaurantSlug}`;
+    await this.limits.hit("order-1m", key, 5, 60);
+    await this.limits.hit("order-15m", key, 25, 900);
+
+    const phone = String(body.customer_phone || "").replace(/\D/g, "");
+    if (phone) {
+      await this.limits.hit(
+        "order-phone-15m",
+        `${restaurantSlug}:${phone}`,
+        8,
+        900,
+      );
+    }
+
+    return this.orders.create(body);
+  }
+}
+
+@Module({
+  imports: [
+    RateLimitModule,
+    TypeOrmModule.forFeature([
+      RestaurantEntity,
+      ProductEntity,
+      ProductAddonEntity,
+      OrderEntity,
+      OrderItemEntity,
+    ]),
+  ],
+  controllers: [OrdersController],
+  providers: [OrdersService],
+})
+export class OrdersModule {}
