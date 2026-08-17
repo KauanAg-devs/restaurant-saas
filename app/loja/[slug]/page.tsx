@@ -296,6 +296,7 @@ function StoreContent({ params }: { params: Promise<{ slug: string }> }) {
         product: state.product,
         view: state.view,
       }),
+      { scroll: false },
     );
   }
   if (error && !data)
