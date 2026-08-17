@@ -1,4 +1,4 @@
-import { imageExtension } from './admin/admin.module';
+import { imageExtension, normalizeSetting } from './admin/admin.module';
 import { passwordResetDevMode } from './auth/auth.module';
 
 describe('security-sensitive development flows',()=>{
@@ -13,5 +13,11 @@ describe('security-sensitive development flows',()=>{
     expect(imageExtension('image/webp')).toBe('webp');
     expect(imageExtension('image/svg+xml')).toBe('');
     expect(imageExtension('text/html')).toBe('');
+  });
+
+  it('never writes null into required restaurant contact fields',()=>{
+    expect(normalizeSetting('whatsapp',null)).toBe('');
+    expect(normalizeSetting('address_text',undefined)).toBe('');
+    expect(normalizeSetting('whatsapp','  (11) 99999-0000  ')).toBe('(11) 99999-0000');
   });
 });
