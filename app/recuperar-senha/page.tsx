@@ -14,7 +14,7 @@ export default function PasswordRecoveryPage(){
 
   useEffect(()=>{
     const hash=new URLSearchParams(location.hash.replace(/^#/,''));
-    const access=hash.get('access_token')||'';
+    const access=hash.get('token')||'';
     if(access)setToken(access);
   },[]);
 
@@ -24,16 +24,17 @@ export default function PasswordRecoveryPage(){
       const redirectTo=`${location.origin}/recuperar-senha`;
       const r:any=await api('password-reset',{method:'POST',body:JSON.stringify({email,redirect_to:redirectTo})});
       setMessage(r.message||'Confira seu e-mail para continuar.');
+      if(r.reset_url)location.href=r.reset_url;
     }catch(e:any){setError(e.message)}finally{setBusy(false)}
   }
 
   async function updatePassword(e:React.FormEvent){
     e.preventDefault();setError('');setMessage('');
-    if(password.length<6)return setError('A senha deve ter pelo menos 6 caracteres.');
+    if(password.length<8)return setError('A senha deve ter pelo menos 8 caracteres.');
     if(password!==confirm)return setError('As senhas não coincidem.');
     try{
       setBusy(true);
-      await api('password-update',{method:'POST',headers:{authorization:`Bearer ${token}`},body:JSON.stringify({password})});
+      await api('password-update',{method:'POST',body:JSON.stringify({token,password})});
       setMessage('Senha atualizada. Você já pode entrar no painel.');
       history.replaceState(null,'',location.pathname);
       setToken('');setPassword('');setConfirm('');
