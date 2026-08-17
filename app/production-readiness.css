@@ -1,1 +1,70 @@
-.admin-recovery-link{display:inline-flex;margin-top:4px;font-size:13px;color:inherit;text-decoration:underline;text-underline-offset:3px}.opening-hours-card{grid-column:1/-1}.opening-hours-list{display:grid;gap:10px;margin-top:16px}.opening-hours-row{display:grid;grid-template-columns:minmax(150px,1fr) auto;gap:16px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border,#e7e7e4)}.opening-hours-times{display:flex;align-items:center;gap:8px}.opening-hours-times input,.opening-hours-timezone select{min-height:38px;border:1px solid #ddd;border-radius:10px;padding:0 10px;background:#fff;color:#171717}.opening-hours-timezone{display:grid;gap:6px;max-width:340px;margin-top:16px;font-size:13px}.opening-hours-timezone select{width:100%}html[data-store-open="false"] .store-brand small,html[data-store-open="false"] .store-hero>div:first-child>span{color:#b42318!important}html[data-store-open="false"] .store-cart{opacity:.78}button:disabled{cursor:not-allowed;opacity:.55}@media(max-width:640px){.opening-hours-row{grid-template-columns:1fr}.opening-hours-times{justify-content:space-between}.opening-hours-times input{max-width:125px}}
+.admin-recovery-link {
+  display: inline-flex;
+  margin-top: 4px;
+  font-size: 13px;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.opening-hours-card {
+  grid-column: 1/-1;
+}
+.opening-hours-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+.opening-hours-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border, #e7e7e4);
+}
+.opening-hours-times {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.opening-hours-times input,
+.opening-hours-timezone select {
+  min-height: 38px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 0 10px;
+  background: #fff;
+  color: #171717;
+}
+.opening-hours-timezone {
+  display: grid;
+  gap: 6px;
+  max-width: 340px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+.opening-hours-timezone select {
+  width: 100%;
+}
+html[data-store-open="false"] .store-brand small,
+html[data-store-open="false"] .store-hero > div:first-child > span {
+  color: #b42318 !important;
+}
+html[data-store-open="false"] .store-cart {
+  opacity: 0.78;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+@media (max-width: 640px) {
+  .opening-hours-row {
+    grid-template-columns: 1fr;
+  }
+  .opening-hours-times {
+    justify-content: space-between;
+  }
+  .opening-hours-times input {
+    max-width: 125px;
+  }
+}

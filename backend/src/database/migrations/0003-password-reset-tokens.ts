@@ -1,8 +1,9 @@
-import { MigrationInterface, QueryRunner } from 'typeorm';
+import { MigrationInterface, QueryRunner } from "typeorm";
 
 export class PasswordResetTokens0003 implements MigrationInterface {
-  name='PasswordResetTokens0003';
-  async up(q:QueryRunner):Promise<void>{await q.query(`
+  name = "PasswordResetTokens0003";
+  async up(q: QueryRunner): Promise<void> {
+    await q.query(`
     CREATE TABLE IF NOT EXISTS password_reset_tokens (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -13,6 +14,9 @@ export class PasswordResetTokens0003 implements MigrationInterface {
     );
     CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user ON password_reset_tokens(user_id);
     CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires ON password_reset_tokens(expires_at);
-  `)}
-  async down(q:QueryRunner):Promise<void>{await q.query(`DROP TABLE IF EXISTS password_reset_tokens`)}
+  `);
+  }
+  async down(q: QueryRunner): Promise<void> {
+    await q.query(`DROP TABLE IF EXISTS password_reset_tokens`);
+  }
 }

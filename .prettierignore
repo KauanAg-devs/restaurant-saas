@@ -1,0 +1,5 @@
+.next
+backend/dist
+backend/node_modules
+node_modules
+tsconfig.tsbuildinfo

@@ -1,1 +1,97 @@
-.store-actions{display:flex;align-items:center;gap:8px;min-width:0}.admin-shortcut{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:0 0 auto;width:auto;min-width:84px;max-width:112px;height:42px;padding:0 12px;margin:0;border:1px solid color-mix(in srgb,var(--nav-text,#171717) 12%,transparent);background:color-mix(in srgb,var(--surface,#fff) 92%,transparent);color:var(--nav-text,#171717);border-radius:12px;overflow:hidden;white-space:nowrap;font-size:12px;line-height:1;font-weight:700;letter-spacing:-.01em;text-decoration:none;box-shadow:0 1px 2px #00000008;transition:background .16s,border-color .16s,box-shadow .16s,transform .16s}.admin-shortcut:hover{background:var(--surface,#fff);border-color:color-mix(in srgb,var(--nav-text,#171717) 20%,transparent);color:var(--nav-text,#171717);box-shadow:0 4px 12px #0000000c;transform:translateY(-1px)}.admin-shortcut:before,.admin-shortcut:after{content:none!important}.admin-shortcut .shortcut-icon{display:grid;place-items:center;flex:0 0 16px;width:16px;height:16px;font-size:13px;line-height:1;opacity:.62}.admin-shortcut .shortcut-label{display:block;min-width:0;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1}.store-cart{min-height:42px}@media(max-width:640px){.store-actions{gap:6px}.admin-shortcut{min-width:76px;max-width:88px;height:40px;padding:0 9px;border-radius:11px;font-size:11px;gap:5px}.admin-shortcut .shortcut-icon{flex-basis:14px;width:14px;height:14px;font-size:12px}.admin-shortcut .shortcut-label{max-width:52px}.store-cart{min-height:40px}}
+.store-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.admin-shortcut {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 84px;
+  max-width: 112px;
+  height: 42px;
+  padding: 0 12px;
+  margin: 0;
+  border: 1px solid
+    color-mix(in srgb, var(--nav-text, #171717) 12%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 92%, transparent);
+  color: var(--nav-text, #171717);
+  border-radius: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  box-shadow: 0 1px 2px #00000008;
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    box-shadow 0.16s,
+    transform 0.16s;
+}
+.admin-shortcut:hover {
+  background: var(--surface, #fff);
+  border-color: color-mix(in srgb, var(--nav-text, #171717) 20%, transparent);
+  color: var(--nav-text, #171717);
+  box-shadow: 0 4px 12px #0000000c;
+  transform: translateY(-1px);
+}
+.admin-shortcut:before,
+.admin-shortcut:after {
+  content: none !important;
+}
+.admin-shortcut .shortcut-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.62;
+}
+.admin-shortcut .shortcut-label {
+  display: block;
+  min-width: 0;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1;
+}
+.store-cart {
+  min-height: 42px;
+}
+@media (max-width: 640px) {
+  .store-actions {
+    gap: 6px;
+  }
+  .admin-shortcut {
+    min-width: 76px;
+    max-width: 88px;
+    height: 40px;
+    padding: 0 9px;
+    border-radius: 11px;
+    font-size: 11px;
+    gap: 5px;
+  }
+  .admin-shortcut .shortcut-icon {
+    flex-basis: 14px;
+    width: 14px;
+    height: 14px;
+    font-size: 12px;
+  }
+  .admin-shortcut .shortcut-label {
+    max-width: 52px;
+  }
+  .store-cart {
+    min-height: 40px;
+  }
+}

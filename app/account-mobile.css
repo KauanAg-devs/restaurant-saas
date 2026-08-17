@@ -1,1 +1,61 @@
-@media(max-width:900px){.admin-route-shell .account-dock{display:block!important;position:fixed!important;left:auto!important;right:14px!important;bottom:max(14px,env(safe-area-inset-bottom))!important;width:52px!important;z-index:500!important}.admin-route-shell .account-trigger{width:52px!important;height:52px!important;padding:8px!important;border-radius:15px!important;justify-content:center!important;background:#17181b!important;box-shadow:0 10px 30px #0004!important}.admin-route-shell .account-avatar{width:34px!important;height:34px!important;flex-basis:34px!important}.admin-route-shell .account-copy,.admin-route-shell .account-chevron{display:none!important}.admin-route-shell .account-popover{left:auto!important;right:0!important;width:min(286px,calc(100vw - 28px))!important;bottom:62px!important;transform:translateY(6px)!important}.admin-route-shell .account-popover.open{transform:none!important}.admin-sidebar .sidebar-bottom{visibility:hidden!important}.admin-content{padding-bottom:82px!important}}@media(max-width:560px){.admin-route-shell .account-dock{right:12px!important;bottom:max(12px,env(safe-area-inset-bottom))!important}.admin-route-shell .account-trigger{width:50px!important;height:50px!important}.admin-route-shell .account-popover{width:min(280px,calc(100vw - 24px))!important}.admin-content{padding-bottom:78px!important}}
+@media (max-width: 900px) {
+  .admin-route-shell .account-dock {
+    display: block !important;
+    position: fixed !important;
+    left: auto !important;
+    right: 14px !important;
+    bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    width: 52px !important;
+    z-index: 500 !important;
+  }
+  .admin-route-shell .account-trigger {
+    width: 52px !important;
+    height: 52px !important;
+    padding: 8px !important;
+    border-radius: 15px !important;
+    justify-content: center !important;
+    background: #17181b !important;
+    box-shadow: 0 10px 30px #0004 !important;
+  }
+  .admin-route-shell .account-avatar {
+    width: 34px !important;
+    height: 34px !important;
+    flex-basis: 34px !important;
+  }
+  .admin-route-shell .account-copy,
+  .admin-route-shell .account-chevron {
+    display: none !important;
+  }
+  .admin-route-shell .account-popover {
+    left: auto !important;
+    right: 0 !important;
+    width: min(286px, calc(100vw - 28px)) !important;
+    bottom: 62px !important;
+    transform: translateY(6px) !important;
+  }
+  .admin-route-shell .account-popover.open {
+    transform: none !important;
+  }
+  .admin-sidebar .sidebar-bottom {
+    visibility: hidden !important;
+  }
+  .admin-content {
+    padding-bottom: 82px !important;
+  }
+}
+@media (max-width: 560px) {
+  .admin-route-shell .account-dock {
+    right: 12px !important;
+    bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  }
+  .admin-route-shell .account-trigger {
+    width: 50px !important;
+    height: 50px !important;
+  }
+  .admin-route-shell .account-popover {
+    width: min(280px, calc(100vw - 24px)) !important;
+  }
+  .admin-content {
+    padding-bottom: 78px !important;
+  }
+}

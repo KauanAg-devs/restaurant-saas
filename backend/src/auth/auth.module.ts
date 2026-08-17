@@ -1,38 +1,349 @@
-import { BadRequestException, Body, Controller, ForbiddenException, HttpCode, Injectable, Module, Post, Req, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { JwtModule, JwtService } from '@nestjs/jwt';
-import { InjectRepository, TypeOrmModule } from '@nestjs/typeorm';
-import { compare, hash } from 'bcryptjs';
-import { createHash, randomBytes } from 'crypto';
-import { DataSource, IsNull, MoreThan, Repository } from 'typeorm';
-import { CategoryEntity, PasswordResetTokenEntity, RestaurantEntity, RestaurantMemberEntity, RestaurantRole, UserEntity } from '../database/entities';
-import { clientIp } from '../security/client-ip';
-import { RateLimitModule, RateLimitService } from '../security/rate-limit.module';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  ForbiddenException,
+  HttpCode,
+  Injectable,
+  Module,
+  Post,
+  Req,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { JwtModule, JwtService } from "@nestjs/jwt";
+import { InjectRepository, TypeOrmModule } from "@nestjs/typeorm";
+import { compare, hash } from "bcryptjs";
+import { createHash, randomBytes } from "crypto";
+import { DataSource, IsNull, MoreThan, Repository } from "typeorm";
+import {
+  CategoryEntity,
+  PasswordResetTokenEntity,
+  RestaurantEntity,
+  RestaurantMemberEntity,
+  RestaurantRole,
+  UserEntity,
+} from "../database/entities";
+import { clientIp } from "../security/client-ip";
+import {
+  RateLimitModule,
+  RateLimitService,
+} from "../security/rate-limit.module";
 
 @Injectable()
-export class AuthService{
- constructor(private jwt:JwtService,private db:DataSource,@InjectRepository(UserEntity) private users:Repository<UserEntity>,@InjectRepository(PasswordResetTokenEntity) private resetTokens:Repository<PasswordResetTokenEntity>,@InjectRepository(RestaurantMemberEntity) private members:Repository<RestaurantMemberEntity>,@InjectRepository(RestaurantEntity) private restaurants:Repository<RestaurantEntity>){}
- async login(email:string,password:string){const user=await this.users.findOne({where:{email:String(email||'').trim().toLowerCase()}});if(!user||!await compare(password||'',user.passwordHash))throw new UnauthorizedException('E-mail ou senha incorretos.');return{access_token:await this.jwt.signAsync({sub:user.id,email:user.email})}}
- async onboarding(b:any){const email=String(b.email||'').trim().toLowerCase(),password=String(b.password||''),name=String(b.restaurant_name||'').trim(),slug=slugify(String(b.slug||name));if(!email.includes('@')||password.length<8)throw new BadRequestException('Informe um e-mail válido e uma senha com pelo menos 8 caracteres.');if(!name)throw new BadRequestException('Informe o nome do restaurante.');if(!b.accepts_delivery&&!b.accepts_pickup)throw new BadRequestException('Ative entrega ou retirada.');const methods=Array.isArray(b.payment_methods)?b.payment_methods.map(String):[];if(!methods.length)throw new BadRequestException('Selecione pelo menos um meio de pagamento.');return this.db.transaction(async m=>{if(await m.findOne(UserEntity,{where:{email}}))throw new BadRequestException('Já existe uma conta com este e-mail.');if(await m.findOne(RestaurantEntity,{where:{slug}}))throw new BadRequestException('Este endereço de loja já está em uso.');const user=await m.save(UserEntity,m.create(UserEntity,{email,passwordHash:await hash(password,12)}));const restaurant=await m.save(RestaurantEntity,m.create(RestaurantEntity,{name,slug,tagline:String(b.tagline||''),whatsapp:String(b.whatsapp||''),addressText:String(b.address||''),acceptsDelivery:Boolean(b.accepts_delivery),acceptsPickup:Boolean(b.accepts_pickup),deliveryFee:String(Number(b.delivery_fee||0)),minimumOrder:String(Number(b.minimum_order||0)),paymentMethods:methods}));await m.save(RestaurantMemberEntity,m.create(RestaurantMemberEntity,{userId:user.id,restaurantId:restaurant.id,role:'owner'}));await m.save(CategoryEntity,m.create(CategoryEntity,{restaurantId:restaurant.id,slug:'principais',name:'Principais',active:true,sortOrder:0}));return{ok:true,slug,access_token:await this.jwt.signAsync({sub:user.id,email:user.email})}})}
- async createPasswordReset(email:string){const user=await this.users.findOne({where:{email:String(email||'').trim().toLowerCase()}});if(!user)return null;const raw=randomBytes(32).toString('base64url'),tokenHash=hashToken(raw),expiresAt=new Date(Date.now()+30*60*1000);await this.db.transaction(async m=>{await m.update(PasswordResetTokenEntity,{userId:user.id,usedAt:IsNull()},{usedAt:new Date()});await m.save(PasswordResetTokenEntity,m.create(PasswordResetTokenEntity,{userId:user.id,tokenHash,expiresAt}))});return raw}
- async updatePassword(token:string,password:string){if(String(password||'').length<8)throw new BadRequestException('A senha deve ter pelo menos 8 caracteres.');const tokenHash=hashToken(String(token||''));await this.db.transaction(async m=>{const reset=await m.findOne(PasswordResetTokenEntity,{where:{tokenHash,usedAt:IsNull(),expiresAt:MoreThan(new Date())},lock:{mode:'pessimistic_write'}});if(!reset)throw new BadRequestException('Link inválido ou expirado. Solicite uma nova recuperação.');await m.update(UserEntity,{id:reset.userId},{passwordHash:await hash(password,12)});await m.update(PasswordResetTokenEntity,{id:reset.id},{usedAt:new Date()})});return{ok:true}}
- async userFromHeader(header?:string){if(!header?.startsWith('Bearer '))throw new UnauthorizedException('Não autenticado');try{return await this.jwt.verifyAsync(header.slice(7))}catch{throw new UnauthorizedException('Sessão inválida ou expirada')}}
- async tenant(header:string|undefined,slug?:string,roles?:RestaurantRole[]){const token=await this.userFromHeader(header);const qb=this.members.createQueryBuilder('m').innerJoinAndMapOne('m.restaurant',RestaurantEntity,'r','r.id=m.restaurant_id').where('m.user_id=:uid',{uid:token.sub});if(slug)qb.andWhere('r.slug=:slug',{slug});const member:any=await qb.getOne();if(!member)throw new ForbiddenException('Sem acesso a este restaurante');if(roles&&!roles.includes(member.role))throw new ForbiddenException('Permissão insuficiente');return{user:token,member,restaurant:member.restaurant as RestaurantEntity}}
+export class AuthService {
+  constructor(
+    private jwt: JwtService,
+    private db: DataSource,
+    @InjectRepository(UserEntity) private users: Repository<UserEntity>,
+    @InjectRepository(PasswordResetTokenEntity)
+    private resetTokens: Repository<PasswordResetTokenEntity>,
+    @InjectRepository(RestaurantMemberEntity)
+    private members: Repository<RestaurantMemberEntity>,
+    @InjectRepository(RestaurantEntity)
+    private restaurants: Repository<RestaurantEntity>,
+  ) {}
+  async login(email: string, password: string) {
+    const user = await this.users.findOne({
+      where: {
+        email: String(email || "")
+          .trim()
+          .toLowerCase(),
+      },
+    });
+    if (!user || !(await compare(password || "", user.passwordHash)))
+      throw new UnauthorizedException("E-mail ou senha incorretos.");
+    return {
+      access_token: await this.jwt.signAsync({
+        sub: user.id,
+        email: user.email,
+      }),
+    };
+  }
+  async onboarding(b: any) {
+    const email = String(b.email || "")
+        .trim()
+        .toLowerCase(),
+      password = String(b.password || ""),
+      name = String(b.restaurant_name || "").trim(),
+      slug = slugify(String(b.slug || name));
+    if (!email.includes("@") || password.length < 8)
+      throw new BadRequestException(
+        "Informe um e-mail válido e uma senha com pelo menos 8 caracteres.",
+      );
+    if (!name) throw new BadRequestException("Informe o nome do restaurante.");
+    if (!b.accepts_delivery && !b.accepts_pickup)
+      throw new BadRequestException("Ative entrega ou retirada.");
+    const methods = Array.isArray(b.payment_methods)
+      ? b.payment_methods.map(String)
+      : [];
+    if (!methods.length)
+      throw new BadRequestException(
+        "Selecione pelo menos um meio de pagamento.",
+      );
+    return this.db.transaction(async (m) => {
+      if (await m.findOne(UserEntity, { where: { email } }))
+        throw new BadRequestException("Já existe uma conta com este e-mail.");
+      if (await m.findOne(RestaurantEntity, { where: { slug } }))
+        throw new BadRequestException("Este endereço de loja já está em uso.");
+      const user = await m.save(
+        UserEntity,
+        m.create(UserEntity, { email, passwordHash: await hash(password, 12) }),
+      );
+      const restaurant = await m.save(
+        RestaurantEntity,
+        m.create(RestaurantEntity, {
+          name,
+          slug,
+          tagline: String(b.tagline || ""),
+          whatsapp: String(b.whatsapp || ""),
+          addressText: String(b.address || ""),
+          acceptsDelivery: Boolean(b.accepts_delivery),
+          acceptsPickup: Boolean(b.accepts_pickup),
+          deliveryFee: String(Number(b.delivery_fee || 0)),
+          minimumOrder: String(Number(b.minimum_order || 0)),
+          paymentMethods: methods,
+        }),
+      );
+      await m.save(
+        RestaurantMemberEntity,
+        m.create(RestaurantMemberEntity, {
+          userId: user.id,
+          restaurantId: restaurant.id,
+          role: "owner",
+        }),
+      );
+      await m.save(
+        CategoryEntity,
+        m.create(CategoryEntity, {
+          restaurantId: restaurant.id,
+          slug: "principais",
+          name: "Principais",
+          active: true,
+          sortOrder: 0,
+        }),
+      );
+      return {
+        ok: true,
+        slug,
+        access_token: await this.jwt.signAsync({
+          sub: user.id,
+          email: user.email,
+        }),
+      };
+    });
+  }
+  async createPasswordReset(email: string) {
+    const user = await this.users.findOne({
+      where: {
+        email: String(email || "")
+          .trim()
+          .toLowerCase(),
+      },
+    });
+    if (!user) return null;
+    const raw = randomBytes(32).toString("base64url"),
+      tokenHash = hashToken(raw),
+      expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    await this.db.transaction(async (m) => {
+      await m.update(
+        PasswordResetTokenEntity,
+        { userId: user.id, usedAt: IsNull() },
+        { usedAt: new Date() },
+      );
+      await m.save(
+        PasswordResetTokenEntity,
+        m.create(PasswordResetTokenEntity, {
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+        }),
+      );
+    });
+    return raw;
+  }
+  async updatePassword(token: string, password: string) {
+    if (String(password || "").length < 8)
+      throw new BadRequestException(
+        "A senha deve ter pelo menos 8 caracteres.",
+      );
+    const tokenHash = hashToken(String(token || ""));
+    await this.db.transaction(async (m) => {
+      const reset = await m.findOne(PasswordResetTokenEntity, {
+        where: { tokenHash, usedAt: IsNull(), expiresAt: MoreThan(new Date()) },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!reset)
+        throw new BadRequestException(
+          "Link inválido ou expirado. Solicite uma nova recuperação.",
+        );
+      await m.update(
+        UserEntity,
+        { id: reset.userId },
+        { passwordHash: await hash(password, 12) },
+      );
+      await m.update(
+        PasswordResetTokenEntity,
+        { id: reset.id },
+        { usedAt: new Date() },
+      );
+    });
+    return { ok: true };
+  }
+  async userFromHeader(header?: string) {
+    if (!header?.startsWith("Bearer "))
+      throw new UnauthorizedException("Não autenticado");
+    try {
+      return await this.jwt.verifyAsync(header.slice(7));
+    } catch {
+      throw new UnauthorizedException("Sessão inválida ou expirada");
+    }
+  }
+  async tenant(
+    header: string | undefined,
+    slug?: string,
+    roles?: RestaurantRole[],
+  ) {
+    const token = await this.userFromHeader(header);
+    const qb = this.members
+      .createQueryBuilder("m")
+      .innerJoinAndMapOne(
+        "m.restaurant",
+        RestaurantEntity,
+        "r",
+        "r.id=m.restaurant_id",
+      )
+      .where("m.user_id=:uid", { uid: token.sub });
+    if (slug) qb.andWhere("r.slug=:slug", { slug });
+    const member: any = await qb.getOne();
+    if (!member) throw new ForbiddenException("Sem acesso a este restaurante");
+    if (roles && !roles.includes(member.role))
+      throw new ForbiddenException("Permissão insuficiente");
+    return {
+      user: token,
+      member,
+      restaurant: member.restaurant as RestaurantEntity,
+    };
+  }
 }
 
 @Controller()
-class AuthController{
- constructor(private auth:AuthService,private limits:RateLimitService){}
- @Post('login') async login(@Req() req:any,@Body() b:any){const email=String(b.email||'').trim().toLowerCase(),key=`${clientIp(req)}:${email}`;await this.limits.hit('login-5m',key,5,300);await this.limits.hit('login-1h',key,15,3600);return this.auth.login(b.email,b.password)}
- @Post('onboarding') async onboarding(@Req() req:any,@Body() b:any){const ip=clientIp(req);await this.limits.hit('onboarding-1h',ip,3,3600);await this.limits.hit('onboarding-24h',ip,8,86400);return this.auth.onboarding(b)}
- @Post('password-reset') @HttpCode(200) async passwordReset(@Req() req:any,@Body() b:any){const email=String(b.email||'').trim().toLowerCase(),ip=clientIp(req);await this.limits.hit('password-reset-15m',`${ip}:${email}`,3,900);if(!passwordResetDevMode(process.env))throw new ServiceUnavailableException('Recuperação por e-mail ainda não está disponível.');const token=await this.auth.createPasswordReset(email),base=trustedResetBase(req,b.redirect_to);return{message:'Link de desenvolvimento gerado. Use-o em até 30 minutos.',...(token?{reset_url:`${base}/recuperar-senha#token=${encodeURIComponent(token)}`}:{})}}
- @Post('password-update') @HttpCode(200) async passwordUpdate(@Req() req:any,@Body() b:any){await this.limits.hit('password-update-15m',clientIp(req),10,900);return this.auth.updatePassword(b.token,b.password)}
+class AuthController {
+  constructor(
+    private auth: AuthService,
+    private limits: RateLimitService,
+  ) {}
+  @Post("login") async login(@Req() req: any, @Body() b: any) {
+    const email = String(b.email || "")
+        .trim()
+        .toLowerCase(),
+      key = `${clientIp(req)}:${email}`;
+    await this.limits.hit("login-5m", key, 5, 300);
+    await this.limits.hit("login-1h", key, 15, 3600);
+    return this.auth.login(b.email, b.password);
+  }
+  @Post("onboarding") async onboarding(@Req() req: any, @Body() b: any) {
+    const ip = clientIp(req);
+    await this.limits.hit("onboarding-1h", ip, 3, 3600);
+    await this.limits.hit("onboarding-24h", ip, 8, 86400);
+    return this.auth.onboarding(b);
+  }
+  @Post("password-reset") @HttpCode(200) async passwordReset(
+    @Req() req: any,
+    @Body() b: any,
+  ) {
+    const email = String(b.email || "")
+        .trim()
+        .toLowerCase(),
+      ip = clientIp(req);
+    await this.limits.hit("password-reset-15m", `${ip}:${email}`, 3, 900);
+    if (!passwordResetDevMode(process.env))
+      throw new ServiceUnavailableException(
+        "Recuperação por e-mail ainda não está disponível.",
+      );
+    const token = await this.auth.createPasswordReset(email),
+      base = trustedResetBase(req, b.redirect_to);
+    return {
+      message: "Link de desenvolvimento gerado. Use-o em até 30 minutos.",
+      ...(token
+        ? {
+            reset_url: `${base}/recuperar-senha#token=${encodeURIComponent(token)}`,
+          }
+        : {}),
+    };
+  }
+  @Post("password-update") @HttpCode(200) async passwordUpdate(
+    @Req() req: any,
+    @Body() b: any,
+  ) {
+    await this.limits.hit("password-update-15m", clientIp(req), 10, 900);
+    return this.auth.updatePassword(b.token, b.password);
+  }
 }
 
-@Module({imports:[RateLimitModule,TypeOrmModule.forFeature([UserEntity,PasswordResetTokenEntity,RestaurantEntity,RestaurantMemberEntity,CategoryEntity]),JwtModule.registerAsync({inject:[ConfigService],useFactory:(c:ConfigService)=>({secret:c.getOrThrow('JWT_SECRET'),signOptions:{expiresIn:c.get('JWT_EXPIRES_IN','7d') as any}})})],providers:[AuthService],controllers:[AuthController],exports:[AuthService,JwtModule]})
-export class AuthModule{}
+@Module({
+  imports: [
+    RateLimitModule,
+    TypeOrmModule.forFeature([
+      UserEntity,
+      PasswordResetTokenEntity,
+      RestaurantEntity,
+      RestaurantMemberEntity,
+      CategoryEntity,
+    ]),
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (c: ConfigService) => ({
+        secret: c.getOrThrow("JWT_SECRET"),
+        signOptions: { expiresIn: c.get("JWT_EXPIRES_IN", "7d") as any },
+      }),
+    }),
+  ],
+  providers: [AuthService],
+  controllers: [AuthController],
+  exports: [AuthService, JwtModule],
+})
+export class AuthModule {}
 
-function slugify(v:string){return String(v||'restaurante').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,70)||'restaurante'}
-function hashToken(v:string){return createHash('sha256').update(v).digest('hex')}
-export function passwordResetDevMode(env:NodeJS.ProcessEnv){return env.PASSWORD_RESET_DEV_MODE==='true'&&env.VERCEL_ENV!=='production'}
-function trustedResetBase(req:any,redirectTo:any){const requested=String(redirectTo||'');try{const url=new URL(requested);const requestHost=String(req.headers?.['x-forwarded-host']||req.headers?.host||'');if(url.host===requestHost&&['http:','https:'].includes(url.protocol))return url.origin}catch{}const host=String(req.headers?.['x-forwarded-host']||req.headers?.host||'localhost:3000').split(',')[0].trim();const proto=String(req.headers?.['x-forwarded-proto']||req.protocol||'http').split(',')[0].trim();return `${proto}://${host}`}
+function slugify(v: string) {
+  return (
+    String(v || "restaurante")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 70) || "restaurante"
+  );
+}
+function hashToken(v: string) {
+  return createHash("sha256").update(v).digest("hex");
+}
+export function passwordResetDevMode(env: NodeJS.ProcessEnv) {
+  return (
+    env.PASSWORD_RESET_DEV_MODE === "true" && env.VERCEL_ENV !== "production"
+  );
+}
+function trustedResetBase(req: any, redirectTo: any) {
+  const requested = String(redirectTo || "");
+  try {
+    const url = new URL(requested);
+    const requestHost = String(
+      req.headers?.["x-forwarded-host"] || req.headers?.host || "",
+    );
+    if (url.host === requestHost && ["http:", "https:"].includes(url.protocol))
+      return url.origin;
+  } catch {}
+  const host = String(
+    req.headers?.["x-forwarded-host"] || req.headers?.host || "localhost:3000",
+  )
+    .split(",")[0]
+    .trim();
+  const proto = String(
+    req.headers?.["x-forwarded-proto"] || req.protocol || "http",
+  )
+    .split(",")[0]
+    .trim();
+  return `${proto}://${host}`;
+}

@@ -19,12 +19,15 @@
 ## Validar
 
 ```bash
+npm run format
 npm run typecheck
 npm test
 npm run test:backend
 npm run build
 git diff --check
 ```
+
+`npm run check` também executa `format:check` e rejeita código-fonte fora do padrão. Arquivos em `backend/dist` são gerados pelo build: faça manutenção nos equivalentes em `backend/src`, nunca no JavaScript compilado.
 
 Também faça um teste manual do fluxo afetado. Para pedidos: abrir loja, adicionar item, finalizar, conferir o pedido no painel e mudar o status. Para configurações: salvar, recarregar e conferir a loja pública.
 
