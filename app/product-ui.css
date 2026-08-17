@@ -103,17 +103,14 @@ textarea:focus-visible {
   background: var(--mf-canvas);
 }
 .marketing-nav {
-  position: absolute;
-  z-index: 5;
-  top: 0;
-  left: 50%;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: min(1320px, calc(100% - clamp(36px, 6vw, 84px)));
   height: 92px;
+  margin: 0 auto;
   padding: 0 clamp(34px, 5vw, 72px);
-  transform: translateX(-50%);
 }
 .marketing-brand {
   display: inline-flex;
@@ -154,8 +151,8 @@ textarea:focus-visible {
   position: relative;
   display: flex;
   align-items: stretch;
-  min-height: 100svh;
-  padding: clamp(18px, 3vw, 42px);
+  min-height: calc(100svh - 92px);
+  padding: 0 clamp(18px, 3vw, 42px) clamp(18px, 3vw, 42px);
   overflow: hidden;
   background: var(--mf-canvas);
 }
@@ -178,7 +175,7 @@ textarea:focus-visible {
   flex-direction: column;
   justify-content: center;
   width: min(1320px, 100%);
-  min-height: calc(100svh - clamp(36px, 6vw, 84px));
+  min-height: calc(100svh - 92px - clamp(18px, 3vw, 42px));
   margin: auto;
   padding: clamp(42px, 7vw, 100px);
   overflow: hidden;
@@ -1327,11 +1324,12 @@ textarea:focus-visible {
     font-size: 14px;
   }
   .landing {
-    padding: 12px;
+    min-height: calc(100svh - 74px);
+    padding: 0 12px 12px;
   }
   .landing-card {
-    min-height: calc(100svh - 24px);
-    padding: 96px 24px 36px;
+    min-height: calc(100svh - 86px);
+    padding: 36px 24px;
     border-radius: 20px;
   }
   .landing h1 {
