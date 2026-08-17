@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { API, api } from "@/lib/api";
 import { formatMoney } from "../format";
 
@@ -22,26 +22,42 @@ export default function Catalog({
   token,
   tenant,
   reload,
+  productId,
+  onProductChange,
 }: {
   products: any[];
   categories: any[];
   token: string;
   tenant: string;
   reload: () => void;
+  productId: string | null;
+  onProductChange: (id: string | null) => void;
 }) {
   const [editing, setEditing] = useState<any | null>(null);
   const [form, setForm] = useState<any>(blankProduct);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
-  function open(product?: any) {
+  useEffect(() => {
     setMessage("");
-    setForm(
-      product
-        ? { ...product, price: String(product.price ?? "") }
-        : { ...blankProduct, category_id: categories[0]?.id || "" },
-    );
-    setEditing(product || { new: true });
+    if (!productId) {
+      setEditing(null);
+      return;
+    }
+    if (productId === "new") {
+      setForm({ ...blankProduct, category_id: categories[0]?.id || "" });
+      setEditing({ new: true });
+      return;
+    }
+    const product = products.find((item) => item.id === productId);
+    if (product) {
+      setForm({ ...product, price: String(product.price ?? "") });
+      setEditing(product);
+    }
+  }, [productId, products, categories]);
+
+  function open(product?: any) {
+    onProductChange(product?.id || "new");
   }
   async function upload(file?: File) {
     if (!file) return;
@@ -85,7 +101,7 @@ export default function Catalog({
         body: JSON.stringify({ ...form, price: Number(form.price) }),
       });
       await reload();
-      setEditing(null);
+      onProductChange(null);
     } catch (e: any) {
       setMessage(e.message);
     } finally {
@@ -101,7 +117,7 @@ export default function Catalog({
         headers: { authorization: `Bearer ${token}` },
       });
       await reload();
-      setEditing(null);
+      onProductChange(null);
     } finally {
       setBusy(false);
     }
@@ -157,7 +173,7 @@ export default function Catalog({
           <section className="product-editor">
             <div className="product-editor-head">
               <h2>{form.id ? "Editar produto" : "Novo produto"}</h2>
-              <button onClick={() => setEditing(null)}>×</button>
+              <button onClick={() => onProductChange(null)}>×</button>
             </div>
             <div className="image-upload">
               <div>

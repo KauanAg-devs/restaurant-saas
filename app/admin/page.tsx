@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import BrandEditor from "./components/BrandEditor";
 import Catalog from "./components/Catalog";
@@ -8,6 +9,7 @@ import Metric from "./components/Metric";
 import Orders from "./components/Orders";
 import StoreSettings from "./components/StoreSettings";
 import { formatMoney } from "./format";
+import { ADMIN_TABS, adminUrl, parseAdminTab } from "./navigation";
 
 type AdminData = {
   restaurant: any;
@@ -27,19 +29,27 @@ const translateAuthError = (message: string) => {
   return message || "Não foi possível entrar agora.";
 };
 export default function AdminPage() {
-  const [tenant, setTenant] = useState("sabor-da-casa");
+  return (
+    <Suspense fallback={<AdminLoading />}>
+      <AdminPanel />
+    </Suspense>
+  );
+}
+
+function AdminPanel() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tenant = searchParams.get("restaurant") || "sabor-da-casa";
+  const tab = parseAdminTab(searchParams.get("tab"));
+  const productId = tab === "catalog" ? searchParams.get("product") : null;
   const [token, setToken] = useState("");
   const [sessionReady, setSessionReady] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [data, setData] = useState<AdminData | null>(null);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState("Visão geral");
   const [loading, setLoading] = useState(false);
   useEffect(() => {
-    setTenant(
-      new URLSearchParams(location.search).get("restaurant") || "sabor-da-casa",
-    );
     setToken(localStorage.getItem("mesaflow-token") || "");
     setSessionReady(true);
   }, []);
@@ -82,20 +92,7 @@ export default function AdminPage() {
   const revenue = orders
     .filter((o) => o.status !== "cancelado")
     .reduce((s, o) => s + Number(o.total), 0);
-  const tabs = [
-    "Visão geral",
-    "Pedidos",
-    "Cardápio",
-    "Aparência",
-    "Configurações",
-  ];
-  if (!sessionReady || (token && !data))
-    return (
-      <main className="admin-session-loading" aria-live="polite">
-        <div className="admin-session-loading-mark">M</div>
-        <span>Carregando painel…</span>
-      </main>
-    );
+  if (!sessionReady || (token && !data)) return <AdminLoading />;
   if (!token)
     return (
       <main className="admin-login">
@@ -158,13 +155,13 @@ export default function AdminPage() {
           </div>
         </div>
         <nav>
-          {tabs.map((item) => (
+          {ADMIN_TABS.map((item) => (
             <button
-              className={tab === item ? "selected" : ""}
-              key={item}
-              onClick={() => setTab(item)}
+              className={tab === item.id ? "selected" : ""}
+              key={item.id}
+              onClick={() => router.push(adminUrl(tenant, item.id))}
             >
-              {item}
+              {item.label}
             </button>
           ))}
         </nav>
@@ -184,13 +181,13 @@ export default function AdminPage() {
         <header>
           <div>
             <span className="muted-caps">{data.restaurant.name}</span>
-            <h1>{tab}</h1>
+            <h1>{ADMIN_TABS.find((item) => item.id === tab)?.label}</h1>
             <p>
-              {tab === "Aparência"
+              {tab === "appearance"
                 ? "Defina a identidade visual da loja sem complicação."
-                : tab === "Cardápio"
+                : tab === "catalog"
                   ? "Crie produtos, envie fotos e controle a disponibilidade."
-                  : tab === "Configurações"
+                  : tab === "settings"
                     ? "Configure operação, entrega, pagamentos e atendimento."
                     : "Gerencie esta área da sua operação."}
             </p>
@@ -204,7 +201,7 @@ export default function AdminPage() {
             <span aria-hidden="true">↗</span>Abrir loja
           </a>
         </header>
-        {tab === "Visão geral" ? (
+        {tab === "overview" ? (
           <>
             <section className="metric-grid">
               <Metric
@@ -226,19 +223,23 @@ export default function AdminPage() {
             />
           </>
         ) : null}
-        {tab === "Pedidos" ? (
+        {tab === "orders" ? (
           <Orders orders={orders} token={token} tenant={tenant} reload={load} />
         ) : null}
-        {tab === "Cardápio" ? (
+        {tab === "catalog" ? (
           <Catalog
             products={data.products || []}
             categories={data.categories || []}
             token={token}
             tenant={tenant}
             reload={load}
+            productId={productId}
+            onProductChange={(id) =>
+              router.push(adminUrl(tenant, "catalog", id || undefined))
+            }
           />
         ) : null}
-        {tab === "Aparência" ? (
+        {tab === "appearance" ? (
           <BrandEditor
             restaurant={data.restaurant}
             token={token}
@@ -246,7 +247,7 @@ export default function AdminPage() {
             reload={load}
           />
         ) : null}
-        {tab === "Configurações" ? (
+        {tab === "settings" ? (
           <StoreSettings
             restaurant={data.restaurant}
             token={token}
@@ -256,5 +257,14 @@ export default function AdminPage() {
         ) : null}
       </main>
     </div>
+  );
+}
+
+function AdminLoading() {
+  return (
+    <main className="admin-session-loading" aria-live="polite">
+      <div className="admin-session-loading-mark">M</div>
+      <span>Carregando painel…</span>
+    </main>
   );
 }
