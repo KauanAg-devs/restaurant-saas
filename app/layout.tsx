@@ -28,6 +28,7 @@ import './order-flow-cleanup.css';
 import './production-readiness.css';
 import './first-customer.css';
 import './whatsapp-order.css';
+import './product-ui.css';
 
 export const metadata: Metadata = {
   title: 'MesaFlow',
