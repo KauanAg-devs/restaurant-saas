@@ -8,7 +8,6 @@ import {
   Module,
   Post,
   Req,
-  ServiceUnavailableException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -25,6 +24,8 @@ import {
   RestaurantRole,
   UserEntity,
 } from "../database/entities";
+import { MailModule } from "../mail/mail.module";
+import { MailService } from "../mail/mail.service";
 import { clientIp } from "../security/client-ip";
 import {
   RateLimitModule,
@@ -233,6 +234,7 @@ class AuthController {
   constructor(
     private auth: AuthService,
     private limits: RateLimitService,
+    private mail: MailService,
   ) {}
   @Post("login") async login(@Req() req: any, @Body() b: any) {
     const email = String(b.email || "")
@@ -258,19 +260,31 @@ class AuthController {
         .toLowerCase(),
       ip = clientIp(req);
     await this.limits.hit("password-reset-15m", `${ip}:${email}`, 3, 900);
-    if (!passwordResetDevMode(process.env))
-      throw new ServiceUnavailableException(
-        "Recuperação por e-mail ainda não está disponível.",
-      );
     const token = await this.auth.createPasswordReset(email),
       base = trustedResetBase(req, b.redirect_to);
+
+    if (passwordResetDevMode(process.env)) {
+      return {
+        message: "Link de desenvolvimento gerado. Use-o em até 30 minutos.",
+        ...(token
+          ? {
+              reset_url: `${base}/recuperar-senha#token=${encodeURIComponent(token)}`,
+            }
+          : {}),
+      };
+    }
+
+    if (token) {
+      const resetUrl = `${base}/recuperar-senha#token=${encodeURIComponent(token)}`;
+      await this.mail.sendPasswordReset(email, resetUrl);
+    } else if (!this.mail.isConfigured()) {
+      // Keep production misconfiguration visible without leaking account existence.
+      await this.mail.sendPasswordReset(email, `${base}/recuperar-senha`);
+    }
+
     return {
-      message: "Link de desenvolvimento gerado. Use-o em até 30 minutos.",
-      ...(token
-        ? {
-            reset_url: `${base}/recuperar-senha#token=${encodeURIComponent(token)}`,
-          }
-        : {}),
+      message:
+        "Se existir uma conta com este e-mail, enviaremos um link de recuperação.",
     };
   }
   @Post("password-update") @HttpCode(200) async passwordUpdate(
@@ -285,6 +299,7 @@ class AuthController {
 @Module({
   imports: [
     RateLimitModule,
+    MailModule,
     TypeOrmModule.forFeature([
       UserEntity,
       PasswordResetTokenEntity,
