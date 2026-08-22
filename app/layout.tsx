@@ -28,6 +28,7 @@ import "./admin-modern-sections.css";
 import "./admin-nav-cleanup.css";
 import "./store-modern.css";
 import "./store-commerce.css";
+import "./store-polish.css";
 
 export const metadata: Metadata = {
   title: "MesaFlow",
