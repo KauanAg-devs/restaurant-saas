@@ -38,149 +38,88 @@ class AdminController {
   ) {}
 
   @Get("admin")
-  async dashboard(
-    @Headers("authorization") authorization: string,
-    @Query("restaurant") slug: string,
-  ) {
+  async dashboard(@Headers("authorization") authorization: string,@Query("restaurant") slug: string) {
     const { restaurant, member } = await this.auth.tenant(authorization, slug);
     return this.admin.dashboard(restaurant, member.role);
   }
 
   @Patch("status")
-  async status(
-    @Headers("authorization") authorization: string,
-    @Query("restaurant") slug: string,
-    @Body() body: any,
-  ) {
+  async status(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Body() body: any) {
     const { restaurant } = await this.auth.tenant(authorization, slug);
     return this.admin.updateOrderStatus(restaurant.id, body);
   }
 
   @Post("product")
-  async createProduct(
-    @Headers("authorization") authorization: string,
-    @Query("restaurant") slug: string,
-    @Body() body: any,
-  ) {
-    const { restaurant } = await this.auth.tenant(authorization, slug, [
-      "owner",
-      "manager",
-    ]);
+  async createProduct(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Body() body: any) {
+    const { restaurant } = await this.auth.tenant(authorization, slug, ["owner", "manager"]);
     return this.admin.createProduct(restaurant.id, body);
   }
 
   @Patch("product")
-  async updateProduct(
-    @Headers("authorization") authorization: string,
-    @Query("restaurant") slug: string,
-    @Body() body: any,
-  ) {
-    const { restaurant } = await this.auth.tenant(authorization, slug, [
-      "owner",
-      "manager",
-    ]);
+  async updateProduct(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Body() body: any) {
+    const { restaurant } = await this.auth.tenant(authorization, slug, ["owner", "manager"]);
     return this.admin.updateProduct(restaurant.id, body);
   }
 
   @Delete("product")
-  async deleteProduct(
-    @Headers("authorization") authorization: string,
-    @Query("restaurant") slug: string,
-    @Query("id") id: string,
-  ) {
-    const { restaurant } = await this.auth.tenant(authorization, slug, [
-      "owner",
-      "manager",
-    ]);
+  async deleteProduct(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Query("id") id: string) {
+    const { restaurant } = await this.auth.tenant(authorization, slug, ["owner", "manager"]);
     return this.admin.deleteProduct(restaurant.id, id);
   }
 
+  @Post("category")
+  async createCategory(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Body() body: any) {
+    const { restaurant } = await this.auth.tenant(authorization, slug, ["owner", "manager"]);
+    return this.admin.createCategory(restaurant.id, body);
+  }
+
+  @Patch("category")
+  async updateCategory(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Body() body: any) {
+    const { restaurant } = await this.auth.tenant(authorization, slug, ["owner", "manager"]);
+    return this.admin.updateCategory(restaurant.id, body);
+  }
+
+  @Delete("category")
+  async deleteCategory(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Query("id") id: string) {
+    const { restaurant } = await this.auth.tenant(authorization, slug, ["owner", "manager"]);
+    return this.admin.deleteCategory(restaurant.id, id);
+  }
+
   @Post("product-image")
-  async productImage(
-    @Headers("authorization") authorization: string,
-    @Query("restaurant") slug: string,
-    @Req() req: any,
-  ) {
+  async productImage(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Req() req: any) {
     return this.uploadImage(authorization, slug, req, "products");
   }
 
   @Post("logo-image")
-  async logoImage(
-    @Headers("authorization") authorization: string,
-    @Query("restaurant") slug: string,
-    @Req() req: any,
-  ) {
+  async logoImage(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Req() req: any) {
     return this.uploadImage(authorization, slug, req, "logos");
   }
 
   @Patch("settings")
-  async settings(
-    @Headers("authorization") authorization: string,
-    @Query("restaurant") slug: string,
-    @Body() body: any,
-  ) {
-    const { restaurant } = await this.auth.tenant(authorization, slug, [
-      "owner",
-      "manager",
-    ]);
+  async settings(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Body() body: any) {
+    const { restaurant } = await this.auth.tenant(authorization, slug, ["owner", "manager"]);
     return this.admin.updateSettings(restaurant, body);
   }
 
   @Patch("branding")
-  async branding(
-    @Headers("authorization") authorization: string,
-    @Query("restaurant") slug: string,
-    @Body() body: any,
-  ) {
-    const { restaurant } = await this.auth.tenant(authorization, slug, [
-      "owner",
-      "manager",
-    ]);
+  async branding(@Headers("authorization") authorization: string,@Query("restaurant") slug: string,@Body() body: any) {
+    const { restaurant } = await this.auth.tenant(authorization, slug, ["owner", "manager"]);
     return this.admin.updateBranding(restaurant, body);
   }
 
-  private async uploadImage(
-    authorization: string,
-    slug: string,
-    req: any,
-    folder: "products" | "logos",
-  ) {
-    const { restaurant } = await this.auth.tenant(authorization, slug, [
-      "owner",
-      "manager",
-    ]);
-    const mime = String(req.headers?.["content-type"] || "")
-      .split(";")[0]
-      .toLowerCase();
+  private async uploadImage(authorization: string,slug: string,req: any,folder: "products" | "logos") {
+    const { restaurant } = await this.auth.tenant(authorization, slug, ["owner", "manager"]);
+    const mime = String(req.headers?.["content-type"] || "").split(";")[0].toLowerCase();
     const extension = imageExtension(mime);
-    if (!extension) {
-      throw new UnsupportedMediaTypeException(
-        "Envie uma imagem JPEG, PNG, WebP ou GIF.",
-      );
-    }
+    if (!extension) throw new UnsupportedMediaTypeException("Envie uma imagem JPEG, PNG, WebP ou GIF.");
     const body = await readBody(req, 4 * 1024 * 1024);
     if (!body.length) throw new BadRequestException("Imagem vazia.");
-
-    return this.storage.uploadPublic(
-      `${folder}/${restaurant.id}/${randomUUID()}.${extension}`,
-      body,
-      mime,
-    );
+    return this.storage.uploadPublic(`${folder}/${restaurant.id}/${randomUUID()}.${extension}`,body,mime);
   }
 }
 
 @Module({
-  imports: [
-    AuthModule,
-    StorageModule,
-    TypeOrmModule.forFeature([
-      RestaurantEntity,
-      OrderEntity,
-      OrderItemEntity,
-      ProductEntity,
-      CategoryEntity,
-    ]),
-  ],
+  imports: [AuthModule,StorageModule,TypeOrmModule.forFeature([RestaurantEntity,OrderEntity,OrderItemEntity,ProductEntity,CategoryEntity])],
   controllers: [AdminController],
   providers: [AdminService],
 })
