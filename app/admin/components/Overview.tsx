@@ -1,0 +1,8 @@
+import Metric from "./Metric";
+import Orders from "./Orders";
+import { formatMoney } from "../format";
+
+export default function Overview({orders,products,token,tenant,reload}:{orders:any[];products:any[];token:string;tenant:string;reload:()=>void}){
+ const valid=orders.filter(o=>o.status!=="cancelado"),revenue=valid.reduce((sum,o)=>sum+Number(o.total||0),0),ticket=valid.length?revenue/valid.length:0,activeProducts=products.filter(p=>p.active&&p.available).length,pending=orders.filter(o=>["novo","recebido","preparando","pronto"].includes(String(o.status).toLowerCase())).length;
+ return <div className="overview-dashboard"><section className="overview-hero"><div><span className="muted-caps">OPERAÇÃO AGORA</span><h2>{pending?`${pending} ${pending===1?"pedido precisa":"pedidos precisam"} de atenção`:"Tudo em dia por aqui"}</h2><p>{pending?"Acompanhe o fluxo e mantenha os pedidos avançando.":"Nenhum pedido ativo aguardando ação neste momento."}</p></div><span className={`overview-live ${pending?"busy":""}`}><i/>{pending?"Em operação":"Operação tranquila"}</span></section><section className="metric-grid overview-metrics"><Metric label="Faturamento" value={formatMoney(revenue)} detail="pedidos não cancelados"/><Metric label="Pedidos" value={String(orders.length)} detail={`${pending} em andamento`}/><Metric label="Ticket médio" value={formatMoney(ticket)} detail="por pedido válido"/><Metric label="Cardápio ativo" value={String(activeProducts)} detail={`${products.length} produtos cadastrados`}/></section><Orders orders={orders} token={token} tenant={tenant} reload={reload}/></div>
+}
