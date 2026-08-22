@@ -23,6 +23,7 @@ import "./product-ui.css";
 import "./team-admin.css";
 import "./confirm-dialog.css";
 import "./admin-mobile-fix.css";
+import "./admin-modern.css";
 
 export const metadata: Metadata = {
   title: "MesaFlow",
