@@ -29,7 +29,10 @@ export default function PasswordRecoveryPage() {
         method: "POST",
         body: JSON.stringify({ email, redirect_to: redirectTo }),
       });
-      setMessage(r.message || "Confira seu e-mail para continuar.");
+      setMessage(
+        r.message ||
+          "Verifique sua caixa de entrada. Se houver uma conta vinculada a este e-mail, você receberá um link para redefinir sua senha.",
+      );
       if (r.reset_url) location.href = r.reset_url;
     } catch (e: any) {
       setError(e.message);
@@ -63,6 +66,8 @@ export default function PasswordRecoveryPage() {
     }
   }
 
+  const feedback = message || error;
+
   return (
     <main className="admin-login">
       <section>
@@ -73,7 +78,7 @@ export default function PasswordRecoveryPage() {
         </p>
       </section>
       {token ? (
-        <form onSubmit={updatePassword}>
+        <form className="recovery-form" onSubmit={updatePassword}>
           <div className="admin-mark">M</div>
           <span className="muted-caps">NOVA SENHA</span>
           <h2>Defina uma nova senha</h2>
@@ -81,7 +86,7 @@ export default function PasswordRecoveryPage() {
             Nova senha
             <input
               type="password"
-              minLength={6}
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -91,7 +96,7 @@ export default function PasswordRecoveryPage() {
             Confirmar senha
             <input
               type="password"
-              minLength={6}
+              minLength={8}
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               required
@@ -100,12 +105,20 @@ export default function PasswordRecoveryPage() {
           <button className="button button-dark" disabled={busy}>
             {busy ? "Salvando…" : "Salvar nova senha"}
           </button>
-          {message ? <small>{message}</small> : null}
-          {error ? <small className="form-error">{error}</small> : null}
-          <a href="/admin">Voltar ao login</a>
+          {feedback ? (
+            <div
+              className={`recovery-feedback ${error ? "is-error" : "is-success"}`}
+              role={error ? "alert" : "status"}
+            >
+              {feedback}
+            </div>
+          ) : null}
+          <a className="recovery-back" href="/admin">
+            <span aria-hidden="true">←</span> Voltar ao login
+          </a>
         </form>
       ) : (
-        <form onSubmit={requestReset}>
+        <form className="recovery-form" onSubmit={requestReset}>
           <div className="admin-mark">M</div>
           <span className="muted-caps">RECUPERAÇÃO</span>
           <h2>Esqueceu a senha?</h2>
@@ -121,9 +134,17 @@ export default function PasswordRecoveryPage() {
           <button className="button button-dark" disabled={busy}>
             {busy ? "Enviando…" : "Enviar link de recuperação"}
           </button>
-          {message ? <small>{message}</small> : null}
-          {error ? <small className="form-error">{error}</small> : null}
-          <a href="/admin">Voltar ao login</a>
+          {feedback ? (
+            <div
+              className={`recovery-feedback ${error ? "is-error" : "is-success"}`}
+              role={error ? "alert" : "status"}
+            >
+              {feedback}
+            </div>
+          ) : null}
+          <a className="recovery-back" href="/admin">
+            <span aria-hidden="true">←</span> Voltar ao login
+          </a>
         </form>
       )}
     </main>
