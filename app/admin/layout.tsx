@@ -1,4 +1,3 @@
-import AccountMenu from "../AccountMenu";
 import AdminActivationChecklist from "../AdminActivationChecklist";
 import AdminOpeningHours from "../AdminOpeningHours";
 import AdminPaymentMethods from "../AdminPaymentMethods";
@@ -16,7 +15,6 @@ export default function AdminLayout({
   return (
     <div className="admin-route-shell">
       <SessionGuard>{children}</SessionGuard>
-      <AccountMenu />
       <AdminPaymentMethods />
       <AdminOpeningHours />
       <AdminRecoveryLink />
