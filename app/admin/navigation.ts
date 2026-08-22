@@ -5,6 +5,7 @@ export const ADMIN_TABS = [
   { id: "categories", label: "Categorias" },
   { id: "appearance", label: "Aparência" },
   { id: "settings", label: "Configurações" },
+  { id: "team", label: "Equipe" },
 ] as const;
 
 export type AdminTab = (typeof ADMIN_TABS)[number]["id"];
