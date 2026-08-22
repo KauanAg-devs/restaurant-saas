@@ -29,18 +29,7 @@ import "./admin-nav-cleanup.css";
 import "./store-modern.css";
 import "./store-commerce.css";
 import "./store-polish.css";
+import "./store-variants.css";
 
-export const metadata: Metadata = {
-  title: "MesaFlow",
-  description: "Plataforma white-label de pedidos para restaurantes",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
-  return (
-    <html lang="pt-BR">
-      <body>{children}</body>
-    </html>
-  );
-}
+export const metadata: Metadata = { title: "MesaFlow", description: "Plataforma white-label de pedidos para restaurantes" };
+export default function RootLayout({children}:Readonly<{children:React.ReactNode}>){return <html lang="pt-BR"><body>{children}</body></html>}
