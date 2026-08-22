@@ -20,6 +20,7 @@ import "./production-readiness.css";
 import "./first-customer.css";
 import "./whatsapp-order.css";
 import "./product-ui.css";
+import "./admin-mobile-fix.css";
 
 export const metadata: Metadata = {
   title: "MesaFlow",
