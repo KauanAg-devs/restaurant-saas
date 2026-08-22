@@ -37,16 +37,11 @@ export class UserEntity {
 export class PasswordResetTokenEntity {
   @PrimaryGeneratedColumn("uuid") id: string;
   @Index() @Column({ name: "user_id" }) userId: string;
-  @Index({ unique: true })
-  @Column({ name: "token_hash", length: 64 })
-  tokenHash: string;
+  @Index({ unique: true }) @Column({ name: "token_hash", length: 64 }) tokenHash: string;
   @Column({ name: "expires_at", type: "timestamptz" }) expiresAt: Date;
-  @Column({ name: "used_at", type: "timestamptz", nullable: true })
-  usedAt?: Date | null;
+  @Column({ name: "used_at", type: "timestamptz", nullable: true }) usedAt?: Date | null;
   @CreateDateColumn({ name: "created_at" }) createdAt: Date;
-  @ManyToOne(() => UserEntity, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "user_id" })
-  user: UserEntity;
+  @ManyToOne(() => UserEntity, { onDelete: "CASCADE" }) @JoinColumn({ name: "user_id" }) user: UserEntity;
 }
 
 @Entity("restaurants")
@@ -55,52 +50,35 @@ export class RestaurantEntity {
   @Index({ unique: true }) @Column() slug: string;
   @Column() name: string;
   @Column({ default: "" }) tagline: string;
-  @Column({ name: "logo_url", type: "text", nullable: true }) logoUrl?:
-    | string
-    | null;
+  @Column({ name: "logo_url", type: "text", nullable: true }) logoUrl?: string | null;
   @Column({ default: true }) active: boolean;
   @Column({ default: "" }) whatsapp: string;
   @Column({ name: "address_text", default: "" }) addressText: string;
   @Column({ name: "accepts_delivery", default: true }) acceptsDelivery: boolean;
   @Column({ name: "accepts_pickup", default: true }) acceptsPickup: boolean;
-  @Column("numeric", {
-    name: "delivery_fee",
-    precision: 10,
-    scale: 2,
-    default: 0,
-  })
-  deliveryFee: string;
-  @Column("numeric", {
-    name: "minimum_order",
-    precision: 10,
-    scale: 2,
-    default: 0,
-  })
-  minimumOrder: string;
-  @Column("simple-json", { name: "payment_methods", default: "[]" })
-  paymentMethods: string[];
-  @Column("simple-json", { name: "opening_hours", default: "{}" })
-  openingHours: Record<string, any>;
+  @Column("numeric", { name: "delivery_fee", precision: 10, scale: 2, default: 0 }) deliveryFee: string;
+  @Column("numeric", { name: "minimum_order", precision: 10, scale: 2, default: 0 }) minimumOrder: string;
+  @Column("simple-json", { name: "payment_methods", default: "[]" }) paymentMethods: string[];
+  @Column("simple-json", { name: "opening_hours", default: "{}" }) openingHours: Record<string, any>;
   @Column({ default: "America/Sao_Paulo" }) timezone: string;
-  @Column({ name: "delivery_minutes_min", default: 30 })
-  deliveryMinutesMin: number;
-  @Column({ name: "delivery_minutes_max", default: 45 })
-  deliveryMinutesMax: number;
+  @Column({ name: "delivery_minutes_min", default: 30 }) deliveryMinutesMin: number;
+  @Column({ name: "delivery_minutes_max", default: 45 }) deliveryMinutesMax: number;
   @Column({ name: "primary_color", default: "#111111" }) primaryColor: string;
-  @Column({ name: "secondary_color", default: "#f4f4f4" })
-  secondaryColor: string;
-  @Column({ name: "background_color", default: "#ffffff" })
-  backgroundColor: string;
+  @Column({ name: "secondary_color", default: "#f4f4f4" }) secondaryColor: string;
+  @Column({ name: "background_color", default: "#ffffff" }) backgroundColor: string;
   @Column({ name: "surface_color", default: "#ffffff" }) surfaceColor: string;
   @Column({ name: "text_color", default: "#171717" }) textColor: string;
-  @Column({ name: "muted_text_color", default: "#737373" })
-  mutedTextColor: string;
-  @Column({ name: "background_pattern", default: "none" })
-  backgroundPattern: string;
+  @Column({ name: "muted_text_color", default: "#737373" }) mutedTextColor: string;
+  @Column({ name: "background_pattern", default: "none" }) backgroundPattern: string;
+  @Column({ name: "store_preset", default: "minimal" }) storePreset: string;
+  @Column({ name: "store_header_style", default: "compact" }) storeHeaderStyle: string;
+  @Column({ name: "store_hero_style", default: "compact" }) storeHeroStyle: string;
+  @Column({ name: "store_card_style", default: "horizontal" }) storeCardStyle: string;
+  @Column({ name: "store_radius", default: "soft" }) storeRadius: string;
+  @Column({ name: "store_density", default: "comfortable" }) storeDensity: string;
   @CreateDateColumn({ name: "created_at" }) createdAt: Date;
   @UpdateDateColumn({ name: "updated_at" }) updatedAt: Date;
-  @OneToMany(() => RestaurantMemberEntity, (m) => m.restaurant)
-  members: RestaurantMemberEntity[];
+  @OneToMany(() => RestaurantMemberEntity, (m) => m.restaurant) members: RestaurantMemberEntity[];
 }
 
 @Entity("restaurant_members")
@@ -110,12 +88,8 @@ export class RestaurantMemberEntity {
   @Column({ name: "restaurant_id" }) restaurantId: string;
   @Column({ name: "user_id" }) userId: string;
   @Column({ default: "staff" }) role: RestaurantRole;
-  @ManyToOne(() => RestaurantEntity, (r) => r.members, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "restaurant_id" })
-  restaurant: RestaurantEntity;
-  @ManyToOne(() => UserEntity, (u) => u.memberships, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "user_id" })
-  user: UserEntity;
+  @ManyToOne(() => RestaurantEntity, (r) => r.members, { onDelete: "CASCADE" }) @JoinColumn({ name: "restaurant_id" }) restaurant: RestaurantEntity;
+  @ManyToOne(() => UserEntity, (u) => u.memberships, { onDelete: "CASCADE" }) @JoinColumn({ name: "user_id" }) user: UserEntity;
 }
 
 @Entity("categories")
@@ -144,8 +118,7 @@ export class ProductEntity {
   @Column({ default: true }) active: boolean;
   @Column({ default: true }) available: boolean;
   @Column({ name: "sort_order", default: 0 }) sortOrder: number;
-  @OneToMany(() => ProductAddonEntity, (a) => a.product)
-  addons: ProductAddonEntity[];
+  @OneToMany(() => ProductAddonEntity, (a) => a.product) addons: ProductAddonEntity[];
 }
 
 @Entity("product_addons")
@@ -156,9 +129,7 @@ export class ProductAddonEntity {
   @Column("numeric", { precision: 10, scale: 2 }) price: string;
   @Column({ default: true }) active: boolean;
   @Column({ name: "sort_order", default: 0 }) sortOrder: number;
-  @ManyToOne(() => ProductEntity, (p) => p.addons, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "product_id" })
-  product: ProductEntity;
+  @ManyToOne(() => ProductEntity, (p) => p.addons, { onDelete: "CASCADE" }) @JoinColumn({ name: "product_id" }) product: ProductEntity;
 }
 
 @Entity("orders")
@@ -172,22 +143,14 @@ export class OrderEntity {
   @Column({ name: "address_text", default: "" }) addressText: string;
   @Column({ default: "" }) notes: string;
   @Column({ name: "payment_method" }) paymentMethod: string;
-  @Column({ name: "payment_status", default: "pendente" })
-  paymentStatus: string;
+  @Column({ name: "payment_status", default: "pendente" }) paymentStatus: string;
   @Column({ default: "novo" }) status: OrderStatus;
   @Column("numeric", { precision: 10, scale: 2 }) subtotal: string;
-  @Column("numeric", {
-    name: "delivery_fee",
-    precision: 10,
-    scale: 2,
-    default: 0,
-  })
-  deliveryFee: string;
+  @Column("numeric", { name: "delivery_fee", precision: 10, scale: 2, default: 0 }) deliveryFee: string;
   @Column("numeric", { precision: 10, scale: 2 }) total: string;
   @CreateDateColumn({ name: "created_at" }) createdAt: Date;
   @UpdateDateColumn({ name: "updated_at" }) updatedAt: Date;
-  @OneToMany(() => OrderItemEntity, (i) => i.order, { cascade: true })
-  orderItems: OrderItemEntity[];
+  @OneToMany(() => OrderItemEntity, (i) => i.order, { cascade: true }) orderItems: OrderItemEntity[];
 }
 
 @Entity("order_items")
@@ -197,18 +160,8 @@ export class OrderItemEntity {
   @Column({ name: "product_id" }) productId: string;
   @Column({ name: "product_name" }) productName: string;
   @Column() quantity: number;
-  @Column("numeric", { name: "unit_price", precision: 10, scale: 2 })
-  unitPrice: string;
-  @Column("numeric", {
-    name: "addons_total",
-    precision: 10,
-    scale: 2,
-    default: 0,
-  })
-  addonsTotal: string;
-  @Column("simple-json", { name: "addon_snapshot", default: "[]" })
-  addonSnapshot: any[];
-  @ManyToOne(() => OrderEntity, (o) => o.orderItems, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "order_id" })
-  order: OrderEntity;
+  @Column("numeric", { name: "unit_price", precision: 10, scale: 2 }) unitPrice: string;
+  @Column("numeric", { name: "addons_total", precision: 10, scale: 2, default: 0 }) addonsTotal: string;
+  @Column("simple-json", { name: "addon_snapshot", default: "[]" }) addonSnapshot: any[];
+  @ManyToOne(() => OrderEntity, (o) => o.orderItems, { onDelete: "CASCADE" }) @JoinColumn({ name: "order_id" }) order: OrderEntity;
 }
