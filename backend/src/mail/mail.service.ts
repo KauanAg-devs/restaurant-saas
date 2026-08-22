@@ -1,8 +1,10 @@
-import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MailService {
+  private readonly logger = new Logger(MailService.name);
+
   constructor(private config: ConfigService) {}
 
   isConfigured() {
@@ -38,13 +40,26 @@ export class MailService {
           tags: [{ name: "category", value: "password_reset" }],
         }),
       });
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Resend request failed before receiving a response: ${message}`);
       throw new ServiceUnavailableException(
         "Não foi possível enviar o e-mail de recuperação. Tente novamente em instantes.",
       );
     }
 
     if (!response.ok) {
+      let responseBody = "<unavailable>";
+      try {
+        responseBody = await response.text();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        responseBody = `<failed to read response body: ${message}>`;
+      }
+
+      this.logger.error(
+        `Resend rejected password reset email: status=${response.status} ${response.statusText}; body=${responseBody}`,
+      );
       throw new ServiceUnavailableException(
         "Não foi possível enviar o e-mail de recuperação. Tente novamente em instantes.",
       );
