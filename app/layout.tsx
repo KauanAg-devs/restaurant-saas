@@ -21,6 +21,7 @@ import "./first-customer.css";
 import "./whatsapp-order.css";
 import "./product-ui.css";
 import "./team-admin.css";
+import "./confirm-dialog.css";
 import "./admin-mobile-fix.css";
 
 export const metadata: Metadata = {
