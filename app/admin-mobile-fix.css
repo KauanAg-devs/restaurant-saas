@@ -2,21 +2,19 @@
 .admin-header-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}
 @media(max-width:900px){
   .admin-shell,.admin-content{width:100%;max-width:100%;min-width:0;overflow-x:clip!important}
-  .admin-sidebar{display:block!important;padding:12px 14px 10px!important;overflow:hidden!important}
-  .admin-brand{display:flex!important;padding:0 0 10px!important}
+  .admin-sidebar{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;padding:12px 14px 10px!important;overflow:hidden!important}
+  .admin-brand{display:flex!important;grid-column:1!important;grid-row:1!important;padding:0!important;min-width:0!important}
   .admin-brand>div{display:block!important}
-  .sidebar-tenant-chip{display:none!important}
-  .admin-sidebar nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;width:100%!important;max-width:100%!important;overflow:visible!important}
+  .sidebar-tenant-chip{display:flex!important;grid-column:2!important;grid-row:1!important;margin:0!important;padding:4px 7px!important;min-width:0!important;max-width:160px!important;height:40px!important;border:1px solid #ffffff16!important;border-radius:10px!important;background:#191a1d!important;box-sizing:border-box!important}
+  .sidebar-tenant-chip>span{width:30px!important;height:30px!important;flex:0 0 30px!important;border-radius:8px!important;background:#fff!important;color:#151515!important}
+  .sidebar-tenant-chip b{font-size:10px!important;color:#fff!important}.sidebar-tenant-chip small{font-size:8px!important;color:#8f9096!important}
+  .admin-sidebar nav{grid-column:1/-1!important;grid-row:2!important;margin-top:10px!important;display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;width:100%!important;max-width:100%!important;overflow:visible!important}
   .admin-sidebar nav button{min-width:0!important}
   .sidebar-bottom{display:none!important}
   .admin-content>header{width:100%;max-width:100%;min-width:0;padding:14px 18px!important;gap:10px!important}
   .admin-heading{min-width:0!important;flex:1 1 auto!important}
   .admin-header-actions{gap:8px}
-  .mobile-profile-chip{display:flex;align-items:center;gap:7px;min-width:0;max-width:150px;height:40px;padding:4px 7px;border:1px solid #dededb;border-radius:10px;background:#fff;color:#242426;cursor:pointer;text-align:left}
-  .mobile-profile-chip>span:first-child{display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;border-radius:8px;background:#18181b;color:#fff;font-size:12px;font-weight:750}
-  .mobile-profile-chip>span:last-child{display:grid;min-width:0;gap:1px}
-  .mobile-profile-chip b,.mobile-profile-chip small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .mobile-profile-chip b{font-size:10px;line-height:1.2}.mobile-profile-chip small{font-size:8px;color:#8a8a91}
+  .mobile-profile-chip{display:none!important}
   .admin-content>header~*{min-width:0;max-width:calc(100% - 36px)}
   .admin-panel,.order-table,.operational-order{min-width:0!important;max-width:100%!important}
 }
@@ -24,11 +22,9 @@
   .admin-content>header p{display:none!important}
   .admin-open-store{width:36px!important;height:36px!important;padding:0!important;font-size:0!important}
   .admin-open-store span{font-size:14px!important}
-  .mobile-profile-chip{height:36px;max-width:132px;padding:3px 6px}
-  .mobile-profile-chip>span:first-child{flex-basis:28px;width:28px;height:28px}
   .order-table{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:10px!important;width:100%!important;max-width:100%!important;padding:0 10px 10px!important;overflow:visible!important}
   .operational-order.order-row{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;width:100%!important;max-width:100%!important;min-width:0!important;min-height:0!important;gap:8px 12px!important;padding:14px!important;border:1px solid #e7e7e4!important;border-radius:12px!important;background:#fff!important;box-sizing:border-box!important}
-  .operational-order> b{grid-column:1!important;grid-row:1!important;align-self:center;font-size:13px!important;color:#18181b!important}
+  .operational-order>b{grid-column:1!important;grid-row:1!important;align-self:center;font-size:13px!important;color:#18181b!important}
   .operational-order>span:nth-child(2){grid-column:1!important;grid-row:2!important;min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;font-size:13px!important}
   .operational-order>span:nth-child(3){grid-column:2!important;grid-row:1!important;justify-self:end!important;align-self:center!important;max-width:100%!important;white-space:nowrap!important}
   .operational-order>strong{grid-column:2!important;grid-row:2!important;justify-self:end!important;align-self:center!important;font-size:14px!important}
@@ -38,5 +34,5 @@
 }
 @media(max-width:420px){
   .admin-sidebar nav{grid-template-columns:repeat(3,minmax(0,1fr))!important}
-  .mobile-profile-chip>span:last-child{display:none}.mobile-profile-chip{width:36px;padding:3px;justify-content:center}
+  .sidebar-tenant-chip{width:40px!important;padding:4px!important;justify-content:center!important}.sidebar-tenant-chip>div{display:none!important}
 }
