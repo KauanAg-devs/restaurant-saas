@@ -2,6 +2,7 @@ export const ADMIN_TABS = [
   { id: "overview", label: "Visão geral" },
   { id: "orders", label: "Pedidos" },
   { id: "catalog", label: "Cardápio" },
+  { id: "categories", label: "Categorias" },
   { id: "appearance", label: "Aparência" },
   { id: "settings", label: "Configurações" },
 ] as const;
