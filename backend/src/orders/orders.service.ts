@@ -124,8 +124,14 @@ export class OrdersService {
   }
 
   private async nextPublicNumber(manager: any, restaurantId: string) {
-    // Short operational number for staff/customers. The UUID remains the real
-    // database identifier. Start at 1001 and increment independently per restaurant.
+    // Serialize number allocation per restaurant for the lifetime of this transaction.
+    // pg_advisory_xact_lock is released automatically on commit/rollback, so two
+    // simultaneous checkouts for the same restaurant cannot read the same latest number.
+    await manager.query(
+      "SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))",
+      ["restaurant-order-number", restaurantId],
+    );
+
     const latest = await manager
       .createQueryBuilder(OrderEntity, "order")
       .where("order.restaurantId = :restaurantId", { restaurantId })
