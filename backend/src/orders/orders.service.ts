@@ -77,7 +77,7 @@ export class OrdersService {
         body.fulfillment_type === "delivery"
           ? Number(restaurant.deliveryFee)
           : 0;
-      const publicNumber = String(Date.now()).slice(-9);
+      const publicNumber = await this.nextPublicNumber(manager, restaurant.id);
       const order = await manager.save(
         OrderEntity,
         manager.create(OrderEntity, {
@@ -121,6 +121,20 @@ export class OrdersService {
         total: Number(order.total),
       };
     });
+  }
+
+  private async nextPublicNumber(manager: any, restaurantId: string) {
+    // Short operational number for staff/customers. The UUID remains the real
+    // database identifier. Start at 1001 and increment independently per restaurant.
+    const latest = await manager
+      .createQueryBuilder(OrderEntity, "order")
+      .where("order.restaurantId = :restaurantId", { restaurantId })
+      .andWhere("order.publicNumber ~ '^[0-9]{4}$'")
+      .orderBy("CAST(order.publicNumber AS INTEGER)", "DESC")
+      .getOne();
+
+    const current = latest ? Number(latest.publicNumber) : 1000;
+    return String(current >= 9999 ? 1001 : current + 1);
   }
 
   private validateRestaurant(restaurant: RestaurantEntity | null, body: any) {
