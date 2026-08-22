@@ -16,7 +16,7 @@ export class AdminService {
     ]);
     const ids=orders.map(o=>o.id);
     const items=ids.length?await this.db.getRepository(OrderItemEntity).createQueryBuilder("item").where("item.order_id IN (:...ids)",{ids}).getMany():[];
-    return { restaurant:restaurantResponse(restaurant),role,orders:orders.map(o=>orderResponse(o,items.filter(i=>i.orderId===o.id))),products:products.map(productResponse),categories:categories.map(categoryResponse) };
+    return { restaurant:restaurantResponse(restaurant),role,orders:orders.map(o=>orderResponse(o,items.filter(i=>i.orderId===o.id))),products:products.map(product=>productResponse(product)),categories:categories.map(category=>categoryResponse(category)) };
   }
 
   async updateOrderStatus(restaurantId:string,body:any) {
